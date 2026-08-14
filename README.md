@@ -1,6 +1,6 @@
-# Boger Bowl · FAXNET 9000
+# Boger Bowl Draft Setup
 
-Family fantasy football draft availability, collected by a cursed 1987 fax kiosk.
+Windows 95-style dialog gauntlet for picking Boger Bowl draft times.
 
 Live: https://kenny150r.github.io/draft-time-picker/
 

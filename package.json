@@ -13,6 +13,7 @@
     "vite": "^8.2.0"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.112.3"
+    "@supabase/supabase-js": "^2.112.3",
+    "98.css": "^0.1.21"
   }
 }

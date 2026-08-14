@@ -1,4 +1,5 @@
+import '98.css'
 import './style.css'
-import { mountKiosk } from './kiosk.ts'
+import { mount } from './app.ts'
 
-mountKiosk(document.querySelector('#app')!)
+mount(document.querySelector('#app')!)
