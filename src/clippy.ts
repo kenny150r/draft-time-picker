@@ -31,7 +31,7 @@ const STEP_TIP: Record<string, string> = {
   dll: 'Retry will not find that file. Ignore is the grown-up button.',
   modem: 'If I were allowed to help, I would whisper: click No.',
   timezone: 'Click Pacific, then OK. Apply is a decoration.',
-  slots: 'This is the actual form. Check every window you can do. I will try not to talk.',
+  slots: 'This is the actual form. Check times, then survive the bee quiz. I will try not to talk.',
   copy: 'Copying files. This part is fake. The next error is also fake. Then it saves.',
   writeprotect: 'Ignore. I mean it this time.',
   finish: 'You can skip the restart. The radio on the right is safe.',
@@ -45,6 +45,8 @@ const BONUS = [
   'Uncle Curt is on ancestry.com. He found a Boger in the 1880 census and will not be joining us until 1881.',
   'Corgis do not observe daylight saving. They observe snack time.',
   'Cinnamon rolls are league-sanctioned. I am a paperclip and therefore ineligible for a piece.',
+  'Aaron unplugs things at festivals. If the lights go out mid-draft, check behind Aaron before you check the breaker.',
+  'Bryan once shot himself in the eye with an airsoft gun Barb bought him. He is fine. The story is not allowed to retire.',
 ]
 
 let greeted = false
@@ -60,6 +62,10 @@ function namedTip(name: string): string | null {
   if (/timmy/i.test(n)) return 'Hello Timmy. Grandma already called. You remain the favorite grandson. This wizard is a formality.'
   if (/curt/i.test(n)) return 'Hello Uncle Curt. Ancestry.com can wait. I say that with love and no expectation you will listen.'
   if (/kenny/i.test(n)) return 'Hello Kenny, the best commissioner possible. I will try to stay out of the way.'
+  if (/aaron/i.test(n)) return 'Hello Aaron. Please keep the power strip plugged in until Setup finishes copying files.'
+  if (/bryan/i.test(n)) return 'Hello Bryan. Eye protection is recommended, even for dialog boxes.'
+  if (/darien|jack/i.test(n)) return 'Hello. Filling out a spouse\'s board is still a buy-in. Especially this year.'
+  if (/barb/i.test(n)) return 'Hello Barb. The league thanks you for historic equipment donations. No further airsoft, please.'
   return null
 }
 
@@ -85,5 +91,9 @@ export function mangledJoke(name: string): string | null {
   if (/timmy/i.test(t)) return "Grandma's Favorite Grandson"
   if (/curt/i.test(t)) return 'Ancestry.com Power User'
   if (/kenny/i.test(t)) return 'Best Commissioner Possible'
+  if (/aaron/i.test(t)) return 'Festival Unplug Specialist'
+  if (/bryan/i.test(t)) return 'Airsoft Safety Spokesperson'
+  if (/darien|jack/i.test(t)) return 'In-Law Buy-In'
+  if (/barb/i.test(t)) return 'Procurement (Airsoft, Retired)'
   return null
 }

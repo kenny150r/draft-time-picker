@@ -185,11 +185,46 @@ body {
   gap: 4px 10px;
 }
 
-.time-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
+.inlaw-hint {
+  font-size: 11px;
+  color: #000080;
+  margin: 6px 0 0;
+}
+
+.captcha-win {
+  width: min(340px, 94vw);
+}
+
+.captcha-sub,
+.captcha-wait,
+.captcha-msg {
+  font-size: 11px;
+  margin: 6px 0;
+}
+
+.captcha-msg {
+  min-height: 1.3em;
+  color: #800000;
+}
+
+.captcha-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.captcha-tile {
+  aspect-ratio: 1;
+  font-size: 28px;
+  min-width: 0 !important;
+  padding: 4px !important;
+  line-height: 1;
+}
+
+.captcha-tile.on {
+  outline: 2px solid #000080;
+  background: #d0d8f0 !important;
 }
 
 .window.maxed {

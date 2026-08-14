@@ -21,7 +21,14 @@ type Step =
   | 'bsod'
   | 'results'
 
-type Overlay = 'help' | 'cantclose' | 'exit' | 'exit-no' | 'run' | 'shutdown' | null
+type Overlay = 'help' | 'cantclose' | 'exit' | 'exit-no' | 'run' | 'shutdown' | 'captcha' | null
+
+type CaptchaKind = 'bee' | 'clip' | 'ball' | 'pc' | 'folder' | 'plug'
+
+type CaptchaTile = {
+  i: number
+  kind: CaptchaKind
+}
 
 type Day = {
   date: string
@@ -44,6 +51,30 @@ function groupDays(): Day[] {
 }
 
 const DAYS = groupDays()
+
+const CAPTCHA_FACE: Record<CaptchaKind, string> = {
+  bee: '🐝',
+  clip: '📎',
+  ball: '🏈',
+  pc: '🖥️',
+  folder: '📁',
+  plug: '🔌',
+}
+
+function shuffleCaptcha(): void {
+  const kinds: CaptchaKind[] = ['bee', 'bee', 'bee', 'clip', 'ball', 'pc', 'folder', 'plug', 'clip']
+  for (let i = kinds.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const a = kinds[i]
+    const b = kinds[j]
+    if (a && b) {
+      kinds[i] = b
+      kinds[j] = a
+    }
+  }
+  state.captchaTiles = kinds.map((kind, i) => ({ i, kind }))
+  state.captchaPicks = new Set()
+}
 
 const HELP =
   'Cannot open Help file.\n\nC:\\WINDOWS\\HELP\\BOGER.HLP\n\nClippit could not find the file either. Press F1 again if you enjoy this message.'
@@ -70,6 +101,12 @@ type State = {
   clippyOn: boolean
   clippyBalloon: boolean
   clippyTip: string
+  captchaOk: boolean
+  captchaFails: number
+  captchaRobot: boolean
+  captchaPicks: Set<number>
+  captchaTiles: CaptchaTile[]
+  captchaMsg: string
 }
 
 const state: State = {
@@ -94,6 +131,12 @@ const state: State = {
   clippyOn: true,
   clippyBalloon: true,
   clippyTip: '',
+  captchaOk: false,
+  captchaFails: 0,
+  captchaRobot: false,
+  captchaPicks: new Set(),
+  captchaTiles: [],
+  captchaMsg: '',
 }
 
 let timers: number[] = []
@@ -411,7 +454,7 @@ function slotsView(): string {
   }).join('')
   return dialog({
     title: 'Available Draft Times',
-    body: `<p>Check every window you can do. All times are Pacific. Weekends include 9:00 AM and 1:00 PM.</p>`,
+    body: `<p>Check every window you can do. All times are Pacific. Weekends include 9:00 AM and 1:00 PM.</p><p class="inlaw-hint">Buy-ins may be higher for in-laws this year. Darien, Jack — filling out your wives' boards still counts.</p>`,
     extra: `<div class="slot-sheet">${weeks}</div>`,
     buttons: [
       { label: '< Back', act: 'to-timezone' },
@@ -532,6 +575,43 @@ function overlayView(): string {
         { label: 'No, continue Setup', act: 'overlay-ok', def: true },
       ],
     )
+  }
+  if (state.overlay === 'captcha') {
+    const tiles = state.captchaTiles
+      .map((t) => {
+        const on = state.captchaPicks.has(t.i)
+        return `<button type="button" class="captcha-tile ${on ? 'on' : ''}" data-act="captcha-tile" data-i="${t.i}" aria-label="${t.kind}">${CAPTCHA_FACE[t.kind]}</button>`
+      })
+      .join('')
+    return `
+      <div class="modal-scrim">
+        <div class="window overlay-win captcha-win">
+          <div class="title-bar">
+            <div class="title-bar-text">Boger Bowl Security</div>
+            <div class="title-bar-controls">
+              <button type="button" aria-label="Close" data-act="captcha-x"></button>
+            </div>
+          </div>
+          <div class="window-body">
+            <p>Select all squares with honey bees.</p>
+            <p class="captcha-sub">If there are none, click Skip. There are some. Skip is decorative.</p>
+            <div class="field-row">
+              <input id="robot" type="checkbox" data-act="captcha-robot" ${state.captchaRobot ? 'checked' : ''}>
+              <label for="robot">I am not a robot</label>
+            </div>
+            ${
+              state.captchaRobot
+                ? `<div class="captcha-grid">${tiles}</div>`
+                : `<p class="captcha-wait">Check the box to load images. This may take 1995.</p>`
+            }
+            <p class="captcha-msg">${esc(state.captchaMsg)}</p>
+            <div class="dlg-btns">
+              <button type="button" data-act="captcha-skip">Skip</button>
+              <button type="button" class="default" data-act="captcha-verify">Verify</button>
+            </div>
+          </div>
+        </div>
+      </div>`
   }
   return ''
 }
@@ -740,6 +820,12 @@ function resetVisit(): void {
   state.clippyOn = true
   state.clippyBalloon = true
   state.clippyTip = ''
+  state.captchaOk = false
+  state.captchaFails = 0
+  state.captchaRobot = false
+  state.captchaPicks = new Set()
+  state.captchaTiles = []
+  state.captchaMsg = ''
   resetClippyTalk()
 }
 
@@ -989,9 +1075,70 @@ function handle(act: string, el: HTMLElement): void {
         }, 0)
         return
       }
+      if (!state.captchaOk) {
+        ding()
+        if (state.captchaTiles.length === 0) shuffleCaptcha()
+        state.overlay = 'captcha'
+        state.captchaMsg = ''
+        render()
+        return
+      }
       ding()
       setStep('copy')
       break
+    case 'captcha-robot':
+      state.captchaRobot = (el as HTMLInputElement).checked
+      state.captchaMsg = state.captchaRobot ? 'Images loaded. Slowly.' : ''
+      render()
+      break
+    case 'captcha-tile': {
+      const i = Number(el.dataset.i)
+      if (Number.isNaN(i)) break
+      if (state.captchaPicks.has(i)) state.captchaPicks.delete(i)
+      else state.captchaPicks.add(i)
+      el.classList.toggle('on', state.captchaPicks.has(i))
+      break
+    }
+    case 'captcha-skip':
+      chordSad()
+      state.captchaMsg = 'Skip is not available during bee season.'
+      render()
+      break
+    case 'captcha-x':
+      chordSad()
+      state.captchaMsg = 'You must complete the security check. Your times are still checked underneath this.'
+      render()
+      break
+    case 'captcha-verify': {
+      if (!state.captchaRobot) {
+        chordSad()
+        state.captchaMsg = 'Confirm you are not a robot first.'
+        render()
+        break
+      }
+      const bees = state.captchaTiles.filter((t) => t.kind === 'bee').map((t) => t.i)
+      const ok =
+        bees.length === state.captchaPicks.size && bees.every((i) => state.captchaPicks.has(i))
+      if (!ok) {
+        chordSad()
+        state.captchaMsg = 'Please select every honey bee. Only the bees. Not the football.'
+        render()
+        break
+      }
+      if (state.captchaFails < 1) {
+        state.captchaFails += 1
+        shuffleCaptcha()
+        state.captchaMsg = 'New images. Select the honey bees again. This is the security model.'
+        ding()
+        render()
+        break
+      }
+      state.captchaOk = true
+      state.overlay = null
+      ding()
+      setStep('copy')
+      break
+    }
     case 'wp-abort':
       state.overlay = 'cantclose'
       render()
@@ -1072,7 +1219,7 @@ export function mount(el: HTMLElement): void {
       return
     }
     const act = actEl.dataset.act ?? ''
-    if (act === 'name' || act === 'run-path' || act === 'toggle' || act === 'tz' || act === 'rs-yes' || act === 'rs-no' || act === 'no-agree') {
+    if (act === 'name' || act === 'run-path' || act === 'toggle' || act === 'tz' || act === 'rs-yes' || act === 'rs-no' || act === 'no-agree' || act === 'captcha-robot') {
       handle(act, actEl)
       return
     }
