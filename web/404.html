@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>404 — gutter ball</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #14532d;
+        color: #fff;
+        font-family: Tahoma, sans-serif;
+        display: grid;
+        place-items: center;
+      }
+      .window {
+        background: #c0c0c0;
+        color: #000;
+        border: 2px solid #fff;
+        border-right-color: #000;
+        border-bottom-color: #000;
+        width: min(420px, 92vw);
+      }
+      .tb {
+        background: #203731;
+        color: #ffb612;
+        padding: 4px 8px;
+        font-weight: 700;
+      }
+      .body {
+        padding: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="window">
+      <div class="tb">C:\BOGER\404.ELF</div>
+      <div class="body">
+        <p><strong>Gutter. The elves are laughing.</strong></p>
+        <p>
+          Skipping is how you get banned from Barbara’s Christmas and also from Aaron’s Airbnbs.
+          Kenny has reviewed this skip and found it incorrect.
+        </p>
+        <p>Back to the wizard. A strike is still required.</p>
+        <p><a href="./">Take me back, I deserve the cinnamon rolls</a></p>
+      </div>
+    </div>
+    <script>
+      sessionStorage.setItem('boger-shame', '1');
+      setTimeout(function () {
+        location.href = './';
+      }, 6500);
+    </script>
+  </body>
+</html>

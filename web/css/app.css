@@ -9,7 +9,7 @@ body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: #008080;
+  background: #14532d;
   font-family: Tahoma, 'Microsoft Sans Serif', sans-serif;
   cursor: default;
   user-select: none;
@@ -44,12 +44,34 @@ a {
   position: fixed;
   inset: 0 0 36px 0;
   background:
-    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.06), transparent 40%),
+    radial-gradient(circle at 80% 8%, rgba(255, 182, 18, 0.22), transparent 32%),
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.1), transparent 28%),
     repeating-linear-gradient(
       45deg,
-      #008080 0 12px,
-      #007575 12px 24px
+      #14532d 0 14px,
+      #0f3d24 14px 28px
     );
+}
+
+#snow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+    radial-gradient(2px 2px at 80px 90px, #fff, transparent),
+    radial-gradient(1px 1px at 160px 50px, #fff, transparent),
+    radial-gradient(2px 2px at 240px 140px, #fff, transparent),
+    radial-gradient(1px 1px at 300px 20px, #fff, transparent);
+  background-size: 320px 180px;
+  animation: snow 12s linear infinite;
+  opacity: 0.55;
+}
+
+@keyframes snow {
+  to {
+    background-position: 0 180px, 40px 180px, -20px 180px, 10px 180px, 80px 180px;
+  }
 }
 
 #icons {
@@ -117,7 +139,7 @@ a {
 }
 
 .window-body.scroll {
-  max-height: min(62vh, 520px);
+  max-height: min(72vh, 640px);
   overflow: auto;
 }
 
@@ -142,6 +164,22 @@ a {
   gap: 6px;
   padding: 3px 6px;
   z-index: 80;
+}
+
+#taskbar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -7px;
+  height: 7px;
+  background: repeating-linear-gradient(
+    90deg,
+    #c41e3a 0 12px,
+    #203731 12px 24px,
+    #ffb612 24px 36px,
+    #1e4d2b 36px 48px
+  );
 }
 
 #start-btn {
@@ -397,8 +435,8 @@ a {
 }
 
 .avail-table .week-head {
-  background: #000080;
-  color: #fff;
+  background: #203731;
+  color: #ffb612;
   text-align: left;
   font-weight: 700;
 }
@@ -608,6 +646,49 @@ progress {
 .skip-trap {
   font-size: 11px;
   float: right;
+}
+
+.bowl-wrap {
+  background: #2b1a12;
+  border: 2px inset #808080;
+  padding: 6px;
+}
+
+#bowl {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  margin: 0 auto;
+  cursor: pointer;
+  touch-action: none;
+  background: #3b2718;
+}
+
+.bowl-hud {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #fff;
+  margin-top: 4px;
+}
+
+.power-track {
+  height: 14px;
+  background: #000;
+  border: 2px inset #808080;
+  margin-top: 4px;
+}
+
+.power-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #203731, #ffb612, #c41e3a);
+}
+
+.bar-fill {
+  background: linear-gradient(#203731, #0f3d24);
 }
 
 @media (max-width: 640px) {
