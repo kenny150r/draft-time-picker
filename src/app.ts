@@ -79,6 +79,56 @@ function shuffleCaptcha(): void {
 const HELP =
   'Cannot open Help file.\n\nC:\\WINDOWS\\HELP\\BOGER.HLP\n\nClippit could not find the file either. Press F1 again if you enjoy this message.'
 
+type BootLine = { text: string; ms?: number; replace?: boolean }
+
+const BOOT_LINES: BootLine[] = [
+  { text: 'Award Modular BIOS v4.51PG, An Energy Star Ally', ms: 40 },
+  { text: 'Copyright (C) 1984-95  Boger Heavy Industries', ms: 40 },
+  { text: '', ms: 40 },
+  { text: 'CPU: Pentium 90 MHz  (optimistic)', ms: 70 },
+  { text: 'L2 Cache: 256K of unresolved feelings', ms: 90 },
+  { text: '', ms: 40 },
+  { text: 'Memory Test :      0K', ms: 50 },
+  { text: 'Memory Test :   1024K', ms: 55, replace: true },
+  { text: 'Memory Test :   2048K', ms: 55, replace: true },
+  { text: 'Memory Test :   4096K', ms: 55, replace: true },
+  { text: 'Memory Test :   8192K', ms: 55, replace: true },
+  { text: 'Memory Test :  12288K', ms: 70, replace: true },
+  { text: 'Memory Test :  16384K OK', ms: 160, replace: true },
+  { text: 'Memory Test :  16385K  (that last K is leftover guilt)', ms: 220 },
+  { text: '', ms: 50 },
+  { text: 'Detecting IDE drives.........', ms: 140 },
+  { text: '  Primary Master :  C:\\BOGER95   2.1 GB of snacks', ms: 90 },
+  { text: '  Primary Slave  :  none (as usual)', ms: 90 },
+  { text: '  Secondary Master: CD-ROM containing one AOL disk', ms: 110 },
+  { text: '', ms: 40 },
+  { text: 'Plug and Play BIOS Extension v1.0A', ms: 80 },
+  { text: '  Found: Generic 2-button mouse', ms: 70 },
+  { text: '  Found: Generic 2-button mouse (again)', ms: 90 },
+  { text: '  Found: Unidentified pointing device (cat)', ms: 140 },
+  { text: '', ms: 40 },
+  { text: 'HIMEM.SYS loaded', ms: 70 },
+  { text: 'EMM386.EXE  Expanded memory unavailable and we are not sorry', ms: 110 },
+  { text: 'SMARTDRV 5.00  write-behind caching your excuses', ms: 110 },
+  { text: 'DBLSPACE  compressing leftover feelings', ms: 110 },
+  { text: '', ms: 40 },
+  { text: 'Initializing Microsoft Windows 95...', ms: 160 },
+  { text: '  KERNEL32.DLL     OK', ms: 70 },
+  { text: '  USER.EXE         OK', ms: 70 },
+  { text: '  GDI.EXE          OK', ms: 70 },
+  { text: '  TIMES.DRV        Pacific only; clock blinking 12:00', ms: 140 },
+  { text: '  MODEM.CPL        no dial tone, as is tradition', ms: 140 },
+  { text: '  CLIPPIT.EXE      already in the system tray', ms: 140 },
+  { text: '  DRAFT.CPL        loaded (actual clock not included)', ms: 140 },
+  { text: '', ms: 50 },
+  { text: 'WARNING: Recycle Bin contains files you will miss later', ms: 160 },
+  { text: 'WARNING: System time is 11:59 AM and will remain so', ms: 160 },
+  { text: '', ms: 50 },
+  { text: 'Starting Windows 95...', ms: 420 },
+]
+
+let bootLeaving = false
+
 type State = {
   step: Step
   overlay: Overlay
@@ -689,7 +739,17 @@ function clippyView(): string {
 
 function chrome(): string {
   if (state.step === 'boot') {
-    return `<div class="boot-screen"><div class="boot-logo">${winFlag()}</div><p>Starting Windows 95...</p></div>`
+    return `<div class="boot-screen" data-act="skip-boot" tabindex="0">
+      <div class="window boot-win">
+        <div class="title-bar">
+          <div class="title-bar-text">${winFlag()} Microsoft Windows 95</div>
+        </div>
+        <div class="window-body">
+          <pre class="boot-log" id="boot-log"></pre>
+          <p class="boot-hint">Click or press any key to skip POST. (You will still have to do the wizard.)</p>
+        </div>
+      </div>
+    </div>`
   }
   if (state.step === 'bsod') {
     return `<div class="bsod" data-act="bsod-key"><p>Windows</p><p>A fatal exception 0E has occurred at 0028:C0001BAD in VXD BOGER(01) + 000006PM. The current application will be terminated.</p><p>* Press any key to continue _</p></div>`
@@ -723,6 +783,43 @@ function bumpClippy(): void {
   state.clippyTip = tipFor(state.step, state.name, 'next')
   state.clippyBalloon = true
   state.clippyOn = true
+}
+
+function finishBoot(): void {
+  if (bootLeaving || state.step !== 'boot') return
+  bootLeaving = true
+  clearTimers()
+  chord()
+  setStep('desktop')
+  later(() => setStep('welcome'), 700)
+}
+
+function runBoot(): void {
+  const log = document.getElementById('boot-log')
+  if (!log) return
+  document.querySelector<HTMLElement>('.boot-screen')?.focus()
+  let i = 0
+  const tick = (): void => {
+    if (state.step !== 'boot' || bootLeaving) return
+    const item = BOOT_LINES[i]
+    if (!item) {
+      later(finishBoot, 380)
+      return
+    }
+    if (item.replace) {
+      const last = log.lastElementChild
+      if (last) last.textContent = item.text
+    } else {
+      const row = document.createElement('div')
+      row.className = 'boot-line'
+      row.textContent = item.text.length ? item.text : ' '
+      log.appendChild(row)
+    }
+    log.scrollTop = log.scrollHeight
+    i += 1
+    later(tick, item.ms ?? 80)
+  }
+  tick()
 }
 
 function setStep(step: Step): void {
@@ -923,6 +1020,9 @@ function handle(act: string, el: HTMLElement): void {
       ding()
       state.overlay = 'help'
       render()
+      break
+    case 'skip-boot':
+      finishBoot()
       break
     case 'noop':
       break
@@ -1255,7 +1355,18 @@ export function mount(el: HTMLElement): void {
     window.addEventListener('pointerup', up)
   })
 
+  window.addEventListener('keydown', (ev) => {
+    if (state.step !== 'boot') return
+    ev.preventDefault()
+    finishBoot()
+  })
+
   el.addEventListener('keydown', (ev) => {
+    if (state.step === 'boot') {
+      ev.preventDefault()
+      finishBoot()
+      return
+    }
     if (state.step === 'bsod') {
       void transmit()
     }
@@ -1267,9 +1378,5 @@ export function mount(el: HTMLElement): void {
   })
 
   render()
-  later(() => {
-    chord()
-    setStep('desktop')
-    later(() => setStep('welcome'), 600)
-  }, 1400)
+  runBoot()
 }
