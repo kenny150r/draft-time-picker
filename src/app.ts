@@ -1,4 +1,5 @@
 import { chord, chordSad, ding, unlockAudio } from './audio.ts'
+import { clippySvg, mangledJoke, tipFor } from './clippy.ts'
 import { listResponses, submitAvailability, type DraftResponse } from './db.ts'
 import { formatSlot, prettyDate, SLOTS, type Slot } from './slots.ts'
 
@@ -46,7 +47,7 @@ function groupDays(): Day[] {
 const DAYS = groupDays()
 
 const HELP =
-  'Cannot open Help file.\n\nC:\\WINDOWS\\HELP\\BOGER.HLP\n\nMake sure the file exists and that you have a working copy of Windows.'
+  'Cannot open Help file.\n\nC:\\WINDOWS\\HELP\\BOGER.HLP\n\nTopics not found:\n  - How to bake cinnamon rolls\n  - Why Timmy is Grandma\'s favorite grandson (classified)\n  - Uncle Curt\'s ancestry.com password\n  - Whether Kenny is the best commissioner possible (YES.DLL already loaded)\n  - Corgi daylight-saving policy\n\nMake sure the file exists and that you have a working copy of Windows.'
 
 type State = {
   step: Step
@@ -69,6 +70,10 @@ type State = {
   results: DraftResponse[] | null
   error: string
   sending: boolean
+  clippyOn: boolean
+  clippyBalloon: boolean
+  clippyRotate: number
+  clippyTip: string
 }
 
 const state: State = {
@@ -92,6 +97,10 @@ const state: State = {
   results: null,
   error: '',
   sending: false,
+  clippyOn: true,
+  clippyBalloon: true,
+  clippyRotate: 0,
+  clippyTip: '',
 }
 
 let timers: number[] = []
@@ -125,6 +134,8 @@ function slug(name: string): string {
 }
 
 function mangled(name: string): string {
+  const joke = mangledJoke(name)
+  if (joke) return joke
   const t = name.trim()
   if (/boger/i.test(t)) return t.replace(/boger/gi, 'Booger')
   if (t.length < 2) return 'Player 2'
@@ -223,25 +234,25 @@ function currentView(): string {
       return dialog({
         title: 'Boger Bowl Draft Time Setup Wizard',
         icon: 'info',
-        body: `<p>Welcome to the Boger Bowl Draft Time Setup Wizard.</p><p>This wizard will help you tell the commissioner when you can draft. It will not be fast. It will not be pleasant. It is, however, certified for Windows 95.</p><p>All times are Pacific. Click Next to continue.</p>`,
+        body: `<p>Welcome to the Boger Bowl Draft Time Setup Wizard.</p><p>This wizard will help you tell <strong>Kenny, the best commissioner possible</strong>, when you can draft. It will not be fast. It will not be pleasant. It is certified for Windows 95, corgis, and cinnamon rolls.</p><p>All times are Pacific. Click Next to continue.</p>`,
         buttons: [
           { label: '< Back', act: 'noop', disabled: true },
           { label: 'Cancel', act: 'try-exit' },
           { label: 'Next >', act: 'to-hang', def: true },
         ],
-        status: 'Setup has not begun, but it is already disappointed.',
+        status: 'Clippit loaded. Corgis not found on COM2.',
       })
     case 'hang':
       return dialog({
         title: 'BogerBowl.exe',
         icon: 'error',
-        body: `<p><strong>This program has performed an illegal operation and will be shut down.</strong></p><p>If the problem persists, contact the commissioner. Do not contact Microsoft. They have suffered enough.</p>`,
+        body: `<p><strong>This program has performed an illegal operation and will be shut down.</strong></p><p>If the problem persists, contact Kenny, the best commissioner possible. Do not contact Microsoft. Do not contact Uncle Curt; he is on ancestry.com.</p>`,
         extra: `<button type="button" data-act="details">Details &gt;&gt;</button><pre class="details hidden" id="details">BOGERBOWL caused a General Protection Fault in
 module TIMES.DRV at 0002:1A4F.
 Registers:
 EAX=00000006  EBX=00000700
-ECX=DECAFBAD  EDX=00000000
-Stack dump: 6PM 7PM 9AM 1PM PT PT PT</pre>`,
+ECX=DECAFBAD  EDX=0000C0R6
+Stack dump: 6PM 7PM CINNAMON CORGI TIMMY CURT KENNY</pre>`,
         buttons: [
           { label: 'Close', act: 'to-license', def: true },
           { label: 'Help', act: 'help' },
@@ -270,14 +281,14 @@ Stack dump: 6PM 7PM 9AM 1PM PT PT PT</pre>`,
     case 'name':
       return dialog({
         title: 'User Information',
-        body: `<p>Type your name as you would like it to appear on the league printout.</p><p>Company is not optional. It has already been filled in.</p>`,
+        body: `<p>Type your name as you would like it to appear on the league printout.</p><p>If you are Timmy, Grandma already knows. Company is not optional.</p>`,
         extra: `<div class="field-row-stacked">
             <label for="name">Name:</label>
             <input id="name" type="text" maxlength="80" value="${esc(state.name)}" data-act="name" />
           </div>
           <div class="field-row-stacked">
             <label>Company:</label>
-            <input type="text" value="Boger Bowl LLC" readonly />
+            <input type="text" value="Boger Bowl LLC / Corgi Entertainment" readonly />
           </div>`,
         buttons: [
           { label: 'Browse...', act: 'browse' },
@@ -289,7 +300,7 @@ Stack dump: 6PM 7PM 9AM 1PM PT PT PT</pre>`,
       return dialog({
         title: 'AutoCorrect',
         icon: 'question',
-        body: `<p>Did you mean:</p><p class="big-name">“${esc(mangled(state.name))}”</p><p>Windows is reasonably sure this is your name.</p>`,
+        body: `<p>Did you mean:</p><p class="big-name">“${esc(mangled(state.name))}”</p><p>Windows is reasonably sure this is your name. Clippit is less sure, but Clippit is a paperclip.</p>`,
         buttons: [
           { label: 'Yes', act: 'mean-yes', def: true },
           { label: 'No', act: 'mean-no' },
@@ -300,7 +311,7 @@ Stack dump: 6PM 7PM 9AM 1PM PT PT PT</pre>`,
       return dialog({
         title: 'BogerBowl.exe - Unable To Locate Component',
         icon: 'error',
-        body: `<p>This application has failed to start because <strong>BOGER32.DLL</strong> was not found. Re-installing the application may fix this problem. It will not.</p><p>Retries: ${state.dllTries}</p>`,
+        body: `<p>This application has failed to start because <strong>BOGER32.DLL</strong> was not found. Re-installing the application may fix this problem. It will not. The corgis have it.</p><p>Retries: ${state.dllTries}</p>`,
         buttons: [
           { label: 'Abort', act: 'dll-abort' },
           { label: 'Retry', act: 'dll-retry', def: true },
@@ -311,7 +322,7 @@ Stack dump: 6PM 7PM 9AM 1PM PT PT PT</pre>`,
       return dialog({
         title: 'Dial-Up Networking',
         icon: 'question',
-        body: `<p>Setup needs to connect to League Headquarters (1-800-BOGER) to continue.</p><p>Are you connected to the Internet?</p>`,
+        body: `<p>Setup needs to connect to League Headquarters (1-800-BOGER) to continue.</p><p>Are you connected to the Internet, or is Uncle Curt still using the line for ancestry.com?</p>`,
         buttons: [
           { label: 'Yes', act: 'modem-yes', def: true },
           { label: 'No', act: 'modem-no' },
@@ -321,7 +332,7 @@ Stack dump: 6PM 7PM 9AM 1PM PT PT PT</pre>`,
     case 'timezone':
       return dialog({
         title: 'Date/Time Properties',
-        body: `<p>All draft times are Pacific. If you are in Arizona, you are still not in Pacific. If you are in Mountain, do not “just add an hour in your head.” We will add it incorrectly for you.</p>`,
+        body: `<p>All draft times are Pacific, as decreed by Kenny, the best commissioner possible.</p><p>Corgis do not observe daylight saving. Uncle Curt observes 1880. If you are in Mountain, do not “just add an hour in your head.”</p>`,
         extra: `<fieldset>
             <legend>Time zone</legend>
             <div class="field-row">
@@ -330,7 +341,7 @@ Stack dump: 6PM 7PM 9AM 1PM PT PT PT</pre>`,
             </div>
             <div class="field-row">
               <input id="tz2" type="radio" name="tz">
-              <label for="tz2">(GMT-07:00) Mountain Time, which is basically Pacific</label>
+              <label for="tz2">(GMT-07:00) Mountain Time / Ancestry.com Time (Uncle Curt)</label>
             </div>
           </fieldset>
           <div class="field-row">
@@ -349,7 +360,7 @@ Stack dump: 6PM 7PM 9AM 1PM PT PT PT</pre>`,
       return dialog({
         title: 'Confirm Availability',
         icon: 'question',
-        body: `<p>You have selected <strong>${state.selected.size}</strong> time window${state.selected.size === 1 ? '' : 's'}.</p><ul class="pick-list">${[...state.selected].map((id) => `<li>${esc(formatSlot(id))}</li>`).join('')}</ul><p>Are you sure? Setup will ask this regardless of your answer.</p>`,
+        body: `<p>You have selected <strong>${state.selected.size}</strong> time window${state.selected.size === 1 ? '' : 's'}.</p><ul class="pick-list">${[...state.selected].map((id) => `<li>${esc(formatSlot(id))}</li>`).join('')}</ul><p>Are you sure? Kenny, the best commissioner possible, will ask this regardless. The corgis have already voted no.</p>`,
         buttons: [
           { label: 'No', act: 'confirm-no' },
           { label: 'Yes', act: 'to-copy', def: true },
@@ -359,7 +370,7 @@ Stack dump: 6PM 7PM 9AM 1PM PT PT PT</pre>`,
     case 'copy':
       return dialog({
         title: 'Copying Files',
-        body: `<p>Please wait while Setup copies Boger Bowl files to your computer.</p><p id="copy-file">Copying: C:\\WINDOWS\\TEMP\\BOGER.EXE</p>`,
+        body: `<p>Please wait while Setup copies Boger Bowl files to your computer. Also cinnamon-roll textures. Also Uncle Curt's ancestry.com cache.</p><p id="copy-file">Copying: C:\\WINDOWS\\TEMP\\BOGER.EXE</p>`,
         extra: `<div class="progress-indicator segmented copy-bar"><span class="progress-indicator-bar" id="bar" style="width: ${state.progress}%"></span></div>`,
         buttons: [{ label: 'Cancel', act: 'try-exit' }],
         status: `${state.progress}% complete`,
@@ -368,7 +379,7 @@ Stack dump: 6PM 7PM 9AM 1PM PT PT PT</pre>`,
       return dialog({
         title: 'Error Copying File',
         icon: 'error',
-        body: `<p>Cannot create or replace C:\\Program Files\\BogerBowl\\TIMES.DAT</p><p>The disk is write-protected. Remove the write-protection or use another disk. This is a website.</p>`,
+        body: `<p>Cannot create or replace C:\\Program Files\\BogerBowl\\TIMES.DAT</p><p>The disk is write-protected. Grandma laminated Timmy's favorite-grandson certificate over the notch. This is a website.</p>`,
         buttons: [
           { label: 'Abort', act: 'wp-abort' },
           { label: 'Retry', act: 'wp-retry', def: true },
@@ -379,7 +390,7 @@ Stack dump: 6PM 7PM 9AM 1PM PT PT PT</pre>`,
       return dialog({
         title: 'Setup Complete',
         icon: 'info',
-        body: `<p>Setup has finished copying files to your computer.</p><p>Before you can use Boger Bowl Draft Times, you must restart Windows.</p>`,
+        body: `<p>Setup has finished copying files to your computer.</p><p>Before you can use Boger Bowl Draft Times, you must restart Windows. Kenny, the best commissioner possible, recommends you do not. The corgis recommend a snack.</p>`,
         extra: `<fieldset>
             <div class="field-row">
               <input id="r1" type="radio" name="rs" data-act="rs-yes" ${state.restartNow ? 'checked' : ''}>
@@ -420,7 +431,7 @@ function dayView(): string {
   return dialog({
     title: 'Boger Bowl Availability',
     icon: 'question',
-    body: `<p>Are you available on <strong>${prettyDate(day.date, day.weekday)}</strong>?</p><p>Check every window you can do. If you click Yes with nothing checked, Setup will assume evenings and will not apologize.</p>`,
+    body: `<p>Are you available on <strong>${prettyDate(day.date, day.weekday)}</strong>?</p><p>Check every window you can do. If you click Yes with nothing checked, Setup will assume evenings — after cinnamon rolls, after the corgis have been walked.</p>`,
     extra: `<fieldset><legend>${day.weekday}</legend>${boxes}</fieldset>`,
     buttons,
     status: `Day ${state.dayIndex + 1} of ${DAYS.length} · ${state.selected.size} windows so far`,
@@ -470,7 +481,14 @@ Rage clicks: ${state.rage}
 Dialogs survived: ${state.dialogs}
 
 COMMISSIONER'S TENTATIVE PICK
+(Kenny, the best commissioner possible)
 ${best ? `${formatSlot(best[0])}\n${best[1].join(', ')}` : '(none yet — you are first)'}
+
+FAMILY NOTES
+- Timmy remains Grandma's favorite grandson. Do not reply-all.
+- Uncle Curt: please close ancestry.com during the draft. This is not a suggestion.
+- Corgis are not eligible to be drafted. They already run the house.
+- Cinnamon rolls will be discussed. They will not be scheduled.
 
 ${lines}
 </textarea>
@@ -482,13 +500,15 @@ const LICENSE = `BOGER BOWL SOFTWARE LICENSE AGREEMENT
 
 IMPORTANT - READ THIS. THEN DO NOT READ THIS.
 
-1. GRANT OF LICENSE. The commissioner grants you a non-exclusive, non-transferable, fully revocable right to click Next.
-2. TIMES. All times are Pacific. "Around 6" is not a time. "After the kids are down" is not a time.
-3. SATURDAY 9:00 AM exists as a loyalty test.
-4. YOU MAY NOT: reverse engineer this wizard, click the close box with expectation of success, or live in Mountain Time without commenting about it.
-5. NO WARRANTY. This software is provided "AS IS," which in 1995 meant "good luck."
-6. By clicking Next you certify you are a Boger, married to a Boger, or have accepted the consequences.
-7. The commissioner may ignore this form and pick Sunday anyway.`
+1. GRANT OF LICENSE. Kenny, the best commissioner possible, grants you a non-exclusive, non-transferable, fully revocable right to click Next.
+2. TIMES. All times are Pacific. "Around 6" is not a time. "After the kids are down" is not a time. "After the cinnamon rolls come out" is closer, but still not a time.
+3. SATURDAY 9:00 AM exists as a loyalty test and as a corgi-walk window.
+4. YOU MAY NOT: reverse engineer this wizard, outrank Timmy as Grandma's favorite grandson, or close Uncle Curt's ancestry.com tabs (he will reopen them).
+5. NO WARRANTY. This software is provided "AS IS," which in 1995 meant "good luck" and in this family means "Kenny will figure it out, because he is the best commissioner possible."
+6. By clicking Next you certify you are a Boger, married to a Boger, a corgi in a trench coat, or have accepted the consequences.
+7. CINNAMON ROLLS. The undersigned agrees that cinnamon rolls are a league-sanctioned food. Clippit is not entitled to any.
+8. ANCESTRY.COM. Uncle Curt may discover a new third cousin at any moment. This does not pause the draft clock.
+9. The commissioner may ignore this form and pick Sunday anyway. He remains, for the record, the best commissioner possible.`
 
 function overlayView(): string {
   if (!state.overlay) return ''
@@ -505,7 +525,7 @@ function overlayView(): string {
     )
   }
   if (state.overlay === 'exit') {
-    return overlayWin('Exit Setup', `<p>Are you sure you want to exit Setup?</p><p>If you exit now, the commissioner will not know when you can draft. He will guess. He will guess wrong.</p>`, [
+    return overlayWin('Exit Setup', `<p>Are you sure you want to exit Setup?</p><p>If you exit now, Kenny, the best commissioner possible, will not know when you can draft. He will guess. The corgis will guess better.</p>`, [
       { label: 'Yes', act: 'exit-yes' },
       { label: 'No', act: 'overlay-ok', def: true },
     ])
@@ -528,7 +548,7 @@ function overlayView(): string {
   if (state.overlay === 'shutdown') {
     return overlayWin(
       'Shut Down Windows',
-      `<p>It's now safe to turn off your computer.</p><p>It is not safe to turn off this wizard. Your draft times have not been saved.</p>`,
+      `<p>It's now safe to turn off your computer.</p><p>It is not safe to turn off this wizard. Uncle Curt still has 47 ancestry.com tabs open. Your draft times have not been saved.</p>`,
       [
         { label: 'Yes, I meant that', act: 'overlay-ok' },
         { label: 'No, continue Setup', act: 'overlay-ok', def: true },
@@ -552,6 +572,10 @@ function desktopIcons(): string {
       <span class="pic exe"></span>
       <span>Draft Times<br>Setup.exe</span>
     </button>
+    <button type="button" class="desk-icon" data-act="clippy-summon">
+      <span class="pic clip"></span>
+      <span>Clippit.exe</span>
+    </button>
     <button type="button" class="desk-icon" data-act="printout">
       <span class="pic txt"></span>
       <span>Availability<br>.txt</span>
@@ -564,6 +588,7 @@ function startMenu(): string {
     <div class="start-menu">
       <div class="start-banner">Windows 95</div>
       <button type="button" data-act="open-wizard">Programs › Boger Bowl › Draft Wizard</button>
+      <button type="button" data-act="clippy-summon">Programs › Office › Office Assistant</button>
       <button type="button" disabled>Settings</button>
       <button type="button" disabled>Find</button>
       <button type="button" data-act="help">Help</button>
@@ -579,18 +604,44 @@ function taskButtons(): string {
   return `<button type="button" class="task ${state.minimized ? '' : 'active'}" data-act="restore">${esc(title)}</button>`
 }
 
+function clippyView(): string {
+  if (state.step === 'boot') return ''
+  if (!state.clippyOn) {
+    return `<button type="button" class="clippy-peek" data-act="clippy-summon" title="Clippit">📎</button>`
+  }
+  return `
+    <div class="clippy-dock">
+      ${
+        state.clippyBalloon
+          ? `<div class="clippy-bubble">
+              <p>${esc(state.clippyTip)}</p>
+              <div class="clippy-actions">
+                <button type="button" data-act="clippy-next">Next tip</button>
+                <button type="button" data-act="clippy-ok">OK</button>
+                <button type="button" data-act="clippy-hide">Hide</button>
+              </div>
+            </div>`
+          : ''
+      }
+      <button type="button" class="clippy-btn ${state.clippyBalloon ? 'talk' : ''}" data-act="clippy-next" aria-label="Clippit">
+        ${clippySvg()}
+      </button>
+    </div>`
+}
+
 function chrome(): string {
   if (state.step === 'boot') {
     return `<div class="boot-screen"><div class="boot-logo">${winFlag()}</div><p>Starting Windows 95...</p></div>`
   }
   if (state.step === 'bsod') {
-    return `<div class="bsod" data-act="bsod-key"><p>Windows</p><p>A fatal exception 0E has occurred at 0028:C0001BAD in VXD BOGER(01) + 000006PM. The current application will be terminated.</p><p>* Press any key to continue _</p></div>`
+    return `<div class="bsod" data-act="bsod-key"><p>Windows</p><p>A fatal exception 0E has occurred at 0028:C0001BAD in VXD BOGER(01) + 0000C0R6. Cinnamon roll cache dumped. Ancestry.com did not crash. It never crashes.</p><p>* Press any key to continue _</p><p class="bsod-clippy">Clippit: it looks like you're trying to die!</p></div>`
   }
   return `
     <div class="desktop">
       <div class="icons">${desktopIcons()}</div>
       <div class="windows-layer ${state.minimized ? 'hidden' : ''}" id="wins">${currentView()}</div>
       ${overlayView()}
+      ${clippyView()}
       ${startMenu()}
       <div class="taskbar">
         <button type="button" class="start-btn ${state.startOpen ? 'active' : ''}" data-act="start">${winFlag()} Start</button>
@@ -604,6 +655,17 @@ function bumpDialog(): void {
   state.dialogs += 1
 }
 
+function speakClippy(step: string = state.step): void {
+  state.clippyTip = tipFor(step, state.name, state.clippyRotate)
+  state.clippyBalloon = true
+  state.clippyOn = true
+}
+
+function bumpClippy(): void {
+  state.clippyRotate += 1
+  speakClippy()
+}
+
 function setStep(step: Step): void {
   clearTimers()
   state.step = step
@@ -614,6 +676,10 @@ function setStep(step: Step): void {
   if (step === 'day') {
     const day = DAYS[state.dayIndex]
     state.pending = new Set(day ? day.slots.filter((s) => state.selected.has(s.id)).map((s) => s.id) : [])
+  }
+  if (step !== 'boot') {
+    state.clippyRotate += 1
+    speakClippy(step)
   }
   render()
   if (step === 'copy') runCopy()
@@ -638,7 +704,16 @@ function nextDayOrConfirm(): void {
 
 function runCopy(): void {
   state.progress = 0
-  const files = ['BOGER.EXE', 'TIMES.DRV', 'BOGER32.DLL', 'SETUP.BMP', 'README.TXT', 'TIMES.DAT']
+  const files = [
+    'BOGER.EXE',
+    'CORGI.BMP',
+    'CINNAMON.ROL',
+    'CURT_ANCESTRY.MDB',
+    'TIMMY.FAV',
+    'KENNY.COM',
+    'CLIPPIT.DLL',
+    'TIMES.DAT',
+  ]
   let i = 0
   const tick = () => {
     if (state.step !== 'copy') return
@@ -707,6 +782,10 @@ function resetVisit(): void {
   state.error = ''
   state.sending = false
   state.minimized = false
+  state.clippyOn = true
+  state.clippyBalloon = true
+  state.clippyRotate = 0
+  state.clippyTip = ''
 }
 
 function handle(act: string, el: HTMLElement): void {
@@ -732,7 +811,7 @@ function handle(act: string, el: HTMLElement): void {
       render()
       later(() => {
         const copy = document.querySelector('.overlay-win .dlg-copy')
-        if (copy) copy.innerHTML = `<p>These are not the times you are looking for.</p>`
+        if (copy) copy.innerHTML = `<p>Contains 3 corgis, 1 cinnamon-roll recipe, and Uncle Curt's ancestry.com bookmarks (14,002).</p>`
       }, 0)
       break
     case 'recycle':
@@ -740,7 +819,7 @@ function handle(act: string, el: HTMLElement): void {
       render()
       later(() => {
         const copy = document.querySelector('.overlay-win .dlg-copy')
-        if (copy) copy.innerHTML = `<p>The Recycle Bin is empty. Your patience is not.</p>`
+        if (copy) copy.innerHTML = `<p>The Recycle Bin is empty. You cannot delete Timmy's favorite-grandson status. Grandma laminated it.</p>`
       }, 0)
       break
     case 'printout':
@@ -764,7 +843,7 @@ function handle(act: string, el: HTMLElement): void {
       render()
       later(() => {
         const copy = document.querySelector('.overlay-win .dlg-copy')
-        if (copy) copy.innerHTML = `<p>Cannot find the file 'C:\\WINDOWS\\BOGER.EXE' (or one of its components). Make sure the path and filename are correct and that all required libraries are available.</p>`
+        if (copy) copy.innerHTML = `<p>Cannot find the file 'C:\\ANCESTRY\\CURT.EXE' (or one of its 47 tabs). Make sure the path and filename are correct and that all required cinnamon rolls are available.</p>`
       }, 0)
       break
     case 'shutdown':
@@ -825,7 +904,7 @@ function handle(act: string, el: HTMLElement): void {
       render()
       later(() => {
         const copy = document.querySelector('.overlay-win .dlg-copy')
-        if (copy) copy.innerHTML = `<p>That checkbox is a lie. Use the other one.</p>`
+        if (copy) copy.innerHTML = `<p>That checkbox is a lie. Use the other one. Clippit could have told you. Clippit did tell you. You did not listen.</p>`
       }, 0)
       break
     case 'no-agree':
@@ -891,7 +970,7 @@ function handle(act: string, el: HTMLElement): void {
       render()
       later(() => {
         const copy = document.querySelector('.overlay-win .dlg-copy')
-        if (copy) copy.innerHTML = `<p>No modem was found on COM1. If you are using a laptop, try walking around with it.</p><p>The correct answer was No.</p>`
+        if (copy) copy.innerHTML = `<p>No modem was found on COM1. Uncle Curt is using it to load the 1850 census. The correct answer was No.</p>`
       }, 0)
       break
     case 'modem-no':
@@ -1016,6 +1095,32 @@ function handle(act: string, el: HTMLElement): void {
     case 'bsod-key':
       void transmit()
       break
+    case 'clippy-summon':
+      state.clippyOn = true
+      bumpClippy()
+      render()
+      break
+    case 'clippy-next':
+      bumpClippy()
+      render()
+      break
+    case 'clippy-ok':
+      state.clippyBalloon = false
+      render()
+      break
+    case 'clippy-hide':
+      state.clippyOn = false
+      state.clippyBalloon = false
+      render()
+      window.setTimeout(() => {
+        if (state.step === 'boot') return
+        state.clippyOn = true
+        state.clippyTip =
+          'I sensed you still needed me. Hide is more of a suggestion. The corgis voted.'
+        state.clippyBalloon = true
+        render()
+      }, 4200)
+      break
     default:
       break
   }
@@ -1030,7 +1135,7 @@ export function mount(el: HTMLElement): void {
     }
     const actEl = t.closest<HTMLElement>('[data-act]')
     if (!actEl) {
-      if (!t.closest('input, textarea, button, label, .window')) state.rage += 1
+      if (!t.closest('input, textarea, button, label, .window, .clippy-dock, .clippy-peek')) state.rage += 1
       return
     }
     const act = actEl.dataset.act ?? ''
