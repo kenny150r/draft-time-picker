@@ -1,16 +1,11 @@
-# Boger Bowl '99 — Draft Availability
+# Boger Bowl Bureau of Draft Affairs
 
-Intentionally cursed family draft-time picker for the Boger Bowl.
+A deliberately annoying kiosk for collecting **Boger Bowl** draft availability.
 
-Live: https://kenny150r.github.io/draft-time-picker/
+Times are **Pacific**. Wednesday–Sunday at 6:00 PM and 7:00 PM. Saturday and Sunday also include 9:00 AM and 1:00 PM. Three candidate weeks are on the form (Aug 19, Aug 26, Sep 2 2026).
 
-- Elf Bowling captcha (spare or strike)
-- Three candidate weeks: Aug 19–23, Aug 26–30, Sep 2–6 2026
-- Wednesday–Sunday at 6pm / 7pm Pacific
-- Saturday & Sunday also 9am / 1pm Pacific
-- Saves to the existing `boger_bowl_responses` table
-- [Commissioner's scoreboard](https://kenny150r.github.io/draft-time-picker/scoreboard.html)
+Family members stop the identity reel on themselves, fill scantron bubbles (twice; the first mark is “too light”), certify Pacific Time, then hold a notary seal so the kiosk can “fax” the commissioner.
 
-```bash
-python3 -m http.server 8080 --directory web
-```
+Commissioner heatmap: add `#ledger` to the URL and enter `cinnamonrolls`.
+
+GitHub Pages publishes the `web/` folder.
