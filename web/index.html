@@ -1,91 +1,134 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-    <title>Boger Bowl Draft Time Wizard 98</title>
-    <meta
-      name="description"
-      content="Official Boger Bowl fantasy draft time selector. Cinnamon rolls, corgis, and Elf Bowling required."
-    />
-    <meta property="og:title" content="Boger Bowl Draft Time Wizard 98" />
-    <meta property="og:description" content="Mark your nights. Throw a strike. Do not call Aaron Rodgers by his last name." />
-    <link
-      rel="icon"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧝</text></svg>"
-    />
-    <link rel="stylesheet" href="https://unpkg.com/98.css@0.1.20/dist/98.css" />
-    <link rel="stylesheet" href="./css/app.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Boger Bowl '99 — Draft Availability (Elf Bowling Captcha)</title>
+    <link rel="stylesheet" href="./css/boger.css" />
   </head>
   <body>
-    <div id="boot" aria-live="polite"></div>
-
-    <div id="desktop" hidden>
-      <div id="snow"></div>
-      <div id="icons">
-        <button class="icon" data-open="wizard" type="button">
-          <div class="glyph">🎳</div>
-          Boger Bowl<br />Draft.exe
-        </button>
-        <button class="icon" data-open="results" type="button">
-          <div class="glyph">📊</div>
-          Results.xls
-        </button>
-        <button class="icon" data-open="readme" type="button">
-          <div class="glyph">📄</div>
-          family.txt
-        </button>
-        <button class="icon" data-open="rolls" type="button">
-          <div class="glyph">🧁</div>
-          cinnamon.bmp
-        </button>
-        <button class="icon" data-open="corgis" type="button">
-          <div class="glyph">🐕</div>
-          corgis\
-        </button>
-        <button class="icon" data-open="recycle" type="button">
-          <div class="glyph">🗑️</div>
-          Recycle Bin
-        </button>
+    <div class="scan"></div>
+    <div class="win">
+      <div class="titlebar">
+        <span>C:\BOGER\DRAFT99.EXE</span>
+        <span class="btns"><i>_</i><i>□</i><i>x</i></span>
       </div>
 
-      <div id="window-layer"></div>
+      <section class="screen on" id="scr-boot">
+        <div class="marquee"><span>BOGER BOWL 1999 SHAREWARE  •  NOT AFFILIATED WITH THE NFL, ANCESTRY.COM, OR ANY AIRBNB  •  ALL TIMES PACIFIC  •  ELVES UNION LOCAL 10 ON BREAK  •  </span></div>
+        <h1>BOGER BOWL <span class="blink">'99</span></h1>
+        <p>Family fantasy football draft availability, as administered by elves who pick their noses on purpose.</p>
+        <img class="poster" src="./img/elf-bowling.png" alt="Elf Bowling captcha reference" />
+        <div class="boot-log" id="boot-log"></div>
+        <button id="boot-go" disabled>Please wait…</button>
+        <p class="tiny">Internet Explorer 5.5 recommended. Cori: this is not a Miami site.</p>
+      </section>
 
-      <div id="clippy">
-        <div class="clippy-bubble" id="clippy-text">
-          It looks like you're trying to schedule a family draft. Have you considered Christmas at Barbara's instead?
+      <section class="screen" id="scr-rules">
+        <h2>House Rules (Barbara's, mostly)</h2>
+        <div class="panel rules-wrap">
+          <ol>
+            <li>Draft times are Wednesday–Sunday, 6:00 PM or 7:00 PM <strong>Pacific</strong>.</li>
+            <li>Saturday and Sunday also offer 9:00 AM and 1:00 PM Pacific (Timmy may already be airborne).</li>
+            <li>Corgis have right of way. Cinnamon rolls are not optional.</li>
+            <li>Lynn may refer to Packers by first name only.</li>
+            <li>Aaron may not unplug this computer.</li>
+            <li>Steven gets a union break. Girl-dad bedtime still applies.</li>
+            <li>You must pass the Elf Bowling captcha. Robots cannot spare.</li>
+          </ol>
+          <div id="corgi" title="drag me">
+            <div class="corgi-art">CORGI<br />DRAG ME</div>
+          </div>
+          <div id="rolls">CINNAMON<br />ROLLS<br /><span class="tiny">drop corgi here</span></div>
         </div>
-        <div class="clippy-face" title="Stapley, now wearing a tiny Packers bow">📎</div>
-      </div>
+        <p class="tiny" id="corgi-msg">A corgi is sitting on the checkbox. This is authentic Las Vegas Christmas energy.</p>
+        <label><input type="checkbox" id="agree" /> I have read the bylaws and I am a Boger (or married to one).</label>
+        <p><button id="rules-go" disabled>Continue (disc 2 still missing)</button></p>
+      </section>
 
-      <div id="start-menu" class="window">
-        <div class="window-body" style="margin: 0; padding: 0">
-          <div class="start-banner">Windows 98</div>
-          <div class="start-items">
-            <button type="button" data-open="wizard">🎳 Boger Bowl Draft</button>
-            <button type="button" data-open="results">📊 Current Results</button>
-            <button type="button" data-open="readme">📄 Family Rules</button>
-            <button type="button" id="start-packers">🧀 Call him Rodgers</button>
-            <button type="button" id="start-airbnb">🔌 Unplug a socket</button>
-            <button type="button" id="start-run">▶️ Run...</button>
-            <button type="button" id="start-shutdown">🔌 Shut Down...</button>
+      <section class="screen" id="scr-roster">
+        <h2>CHOOSE YOUR BOGER</h2>
+        <p class="tiny">Arcade cabinet energy. One fighter per household mouse.</p>
+        <div class="roster" id="roster"></div>
+        <div class="panel" id="bio">Select a cousin. Choose poorly and the elves will know.</div>
+        <label id="amy-note" hidden><input type="checkbox" id="jack-proxy" /> I am Jack, filling this out for Amy, with the baby nearby, in the new house.</label>
+        <p><button id="confirm-boger" disabled>Lock in fighter &amp; bowl</button></p>
+      </section>
+
+      <section class="screen" id="scr-bowl">
+        <div class="bowl-top">
+          <h2>ELF BOWLING CAPTCHA</h2>
+          <div>
+            <span id="bowl-who"></span>
+            · throws <strong id="throw-count">0</strong>
           </div>
         </div>
-      </div>
+        <p class="hint">Aim on the lane, click to start the jumpy power bar, click again to throw. Spare or strike required. The frog is in the union.</p>
+        <canvas id="lane" width="960" height="520"></canvas>
+        <p><button id="bowl-next" disabled>Captcha incomplete</button></p>
+      </section>
 
-      <div id="taskbar">
-        <button id="start-btn" type="button">🪟 Start</button>
-        <div id="task-buttons"></div>
-        <div class="tray">
-          <span title="Voicemail: Barbara (cinnamon rolls are in the oven). Also a corgi is on the keyboard.">🔊</span>
-          <span id="clock">4:20 PM</span>
+      <section class="screen" id="scr-guide">
+        <h2>MAGNAVOX CHANNEL GUIDE</h2>
+        <p class="tiny" id="guide-who"></p>
+        <p class="tiny">Three satellite packages. Switching weeks reacquires the dish. Hold a timeslot to record. Quick taps do nothing. This is not TiVo, Barbara.</p>
+        <div id="week-packs"></div>
+        <p class="tiny" id="dish-name"></p>
+        <div class="guide-layout">
+          <div>
+            <div class="epg" id="epg"></div>
+            <p class="tiny">* Weekend-only channels 09 and 13. Local time shown under each show for your city.</p>
+            <p class="tiny">Recorded: <strong id="picked-n">0</strong></p>
+            <p class="err" id="hold-hint"></p>
+            <p>
+              <button id="select-bryan">I CAN MAKE ANYTHING (hold, like Bryan at Catan)</button>
+              <button id="clear-aaron" class="danger">Aaron's weekend (clear)</button>
+            </p>
+            <p><button id="guide-next" class="good">Send to the fax machine</button></p>
+          </div>
+          <div class="remote">
+            <div>BOGER-REMOTE</div>
+            <div class="pad">
+              <span></span><button type="button" id="remote-up">CH+</button><span></span>
+              <button type="button" id="remote-left">VOL−</button>
+              <button type="button" id="remote-rec" class="rec">REC</button>
+              <button type="button" id="remote-right">VOL+</button>
+              <span></span><button type="button" id="remote-down">CH−</button><span></span>
+            </div>
+            <p class="tiny" id="battery-msg">Battery dead. Christmas lights stole it.</p>
+            <button type="button" id="battery">Replace battery</button>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <section class="screen" id="scr-fax">
+        <h2>Thermal Fax to Commissioner Kenny</h2>
+        <p class="tiny">Signing as <strong id="fax-who"></strong>. Do not call. He is in California, inventing Pacific Time.</p>
+        <div class="fax" id="fax-body"></div>
+        <p class="tiny" id="sign-hint"></p>
+        <p><input id="sign" type="text" autocomplete="off" placeholder="signature" /></p>
+        <p class="err" id="sign-err"></p>
+        <div id="jam" hidden class="panel">
+          Printer jam behind Curt's honey extractor. There are bees.
+          <p><button type="button" id="clear-jam">Reach in anyway</button></p>
+        </div>
+        <p class="tiny" id="jam-note"></p>
+        <p><button id="fax-go" class="good">FAX TO THE COMMISH</button></p>
+      </section>
+
+      <section class="screen" id="scr-done">
+        <h2>FAX RECEIVED</h2>
+        <p>Your suffering has been logged in the Boger Bowl ledger.</p>
+        <div class="fax" id="done-lines"></div>
+        <p class="done-stats" id="done-stats"></p>
+        <p><a href="./scoreboard.html">Commissioner's booth (scoreboard)</a></p>
+        <p class="tiny">If Jack did Amy's picks, the elves already know.</p>
+      </section>
     </div>
-
-    <div id="bsod"></div>
-    <div id="confetti" class="confetti" hidden></div>
-
+    <footer>
+      Boger Bowl '99  •  shareware, do not distribute to Airbnb hosts  •
+      <a href="./scoreboard.html">scoreboard</a>
+    </footer>
     <script type="module" src="./js/app.js"></script>
   </body>
 </html>

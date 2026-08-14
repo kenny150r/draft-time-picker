@@ -1,20 +1,15 @@
-# Boger Bowl Draft Time Wizard
+# Boger Bowl '99 — Draft Availability
 
-A deliberately awful Windows 98 / Christmas-in-Vegas wizard that collects real draft availability for the **Boger Bowl**.
+Intentionally cursed family draft-time picker for the Boger Bowl.
 
-Live: [https://kenny150r.github.io/draft-time-picker/](https://kenny150r.github.io/draft-time-picker/)
+Live: https://kenny150r.github.io/draft-time-picker/
 
-## What it collects
-
-Each person marks **every slot they can do**:
-
-- **Days:** Wednesday through Sunday
-- **Times:** 6:00 PM or 7:00 PM **Pacific** (Kenny’s board time)
-- **Windows:** Aug 19–23, Aug 26–30, and Sep 2–6, 2026
-
-There is an **Elf Bowling CAPTCHA**. A strike is the only passing grade.
-
-## Local preview
+- Elf Bowling captcha (spare or strike)
+- Three candidate weeks: Aug 19–23, Aug 26–30, Sep 2–6 2026
+- Wednesday–Sunday at 6pm / 7pm Pacific
+- Saturday & Sunday also 9am / 1pm Pacific
+- Saves to the existing `boger_bowl_responses` table
+- [Commissioner's scoreboard](https://kenny150r.github.io/draft-time-picker/scoreboard.html)
 
 ```bash
 python3 -m http.server 8080 --directory web

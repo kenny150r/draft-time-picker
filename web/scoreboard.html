@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Boger Bowl — Commissioner's Booth</title>
+    <link rel="stylesheet" href="./css/boger.css" />
+  </head>
+  <body>
+    <div class="scan"></div>
+    <div class="win">
+      <div class="titlebar">
+        <span>C:\BOGER\SCOREBOARD.EXE</span>
+        <span class="btns"><i>_</i><i>□</i><i>x</i></span>
+      </div>
+      <section class="screen on">
+        <h1>Commissioner's Booth</h1>
+        <p class="tiny">Latest fax per Boger. Times are Pacific. Y = can make it.</p>
+        <p id="meta"></p>
+        <p id="call"></p>
+        <p id="missing"></p>
+        <div id="weeks"></div>
+        <p><button type="button" id="reload">Refresh (no elves this time)</button> · <a href="./">back to the captcha</a></p>
+        <h2>Fax log</h2>
+        <ul id="log"></ul>
+      </section>
+    </div>
+    <script type="module" src="./js/scoreboard.js"></script>
+  </body>
+</html>
