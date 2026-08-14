@@ -21,92 +21,63 @@ export function clippySvg(): string {
     </svg>`
 }
 
-const BY_STEP: Record<string, string[]> = {
-  desktop: [
-    'It looks like you\'re trying to start a computer! I can help with that. Or with cinnamon rolls. Or with both.',
-    'Tip: the Recycle Bin will not accept Uncle Curt\'s ancestry.com tabs. Nothing will.',
-  ],
-  welcome: [
-    'It looks like you\'re trying to pick a draft time! Kenny — the best commissioner possible — asked me to "help." I will not.',
-    'Before we begin: corgis are a valid excuse for being late. Ancestry.com is not.',
-  ],
-  hang: [
-    'This program performed an illegal operation. So did Uncle Curt when he opened a 12th ancestry.com tab.',
-    'Have you tried turning it off and on? That is also how you get a corgi off the couch.',
-  ],
-  license: [
-    'It looks like you\'re trying to read a license agreement! Nobody in this family has ever done that. Not even Kenny, the best commissioner possible.',
-    'Section 9 is about cinnamon rolls. That is the only section that is legally binding.',
-  ],
-  name: [
-    'If you are Timmy, you may leave this blank. Grandma already wrote "favorite grandson" in the good pen.',
-    'Pro tip: names are for people. Corgis respond to the sound of the cinnamon-roll pan.',
-  ],
-  didyoumean: [
-    'Windows AutoCorrect once turned Corgi into Corgy. A dark day in league history.',
-    'If this is Uncle Curt, I already pre-filled ancestry.com as your emergency contact.',
-  ],
-  dll: [
-    'BOGER32.DLL is in the same Tupperware as the leftover cinnamon rolls. Check the fridge.',
-    'Retry will not find the file. The corgis moved it. They move everything.',
-  ],
-  modem: [
-    'It looks like you\'re trying to use the phone line! Uncle Curt is downloading the 1850 census. You will wait.',
-    'No, you are not connected to the Internet. You are connected to family. Worse.',
-  ],
-  timezone: [
-    'Corgis do not observe daylight saving time. They observe snack time. Plan the draft accordingly.',
-    'Pacific Time is the time Kenny, the best commissioner possible, has chosen. This is not a democracy.',
-  ],
-  day: [
-    'Saturday 9am is when the cinnamon rolls come out and the corgis demand a walk. Choose with your stomach.',
-    'Yes to All skips the morning slots. Grandma would never skip a morning that might include Timmy.',
-    'If you pick Sunday 1pm, Uncle Curt can still sneak in one more great-great-aunt on ancestry.com. He will.',
-  ],
-  confirm: [
-    'It looks like you\'re trying to confirm a schedule! Kenny, the best commissioner possible, will still pick the time. This is for his feelings.',
-    'I have annotated your times with "corgi-safe" and "cinnamon-roll-conflict." You cannot see the annotations.',
-  ],
-  copy: [
-    'Copying CURT_ANCESTRY.MDB (47 GB of third cousins). Please do not unplug the corgi.',
-    'Setup is also installing a cinnamon roll toolbar. It does not bake. It only judges.',
-  ],
-  writeprotect: [
-    'The disk is write-protected because Grandma laminated Timmy\'s "favorite grandson" certificate.',
-    'Ignore is what Uncle Curt clicks when ancestry.com asks if he is still there. He is always still there.',
-  ],
-  finish: [
-    'It looks like you\'re trying to restart Windows! That is how ancestry.com tabs reproduce.',
-    'Kenny, the best commissioner possible, thanks you. The corgis remain uncommitted.',
-  ],
-  results: [
-    'Printout complete. Timmy is still Grandma\'s favorite grandson. This file will not change that. I checked.',
-    'I saved a copy to C:\\Corgis\\Cinnamon\\Curt\\Ancestry\\KennyTheBest\\draft.txt',
-  ],
+const STEP_TIP: Record<string, string> = {
+  desktop: 'It looks like you\'re trying to start a computer!',
+  welcome: 'It looks like you\'re trying to pick a draft time. I can hover nearby and not help.',
+  hang: 'This program performed an illegal operation. Closing it is how you continue. Obviously.',
+  license: 'It looks like you\'re trying to read a license agreement. The honest checkbox is the working one.',
+  name: 'Type your real name. AutoCorrect is going to have opinions.',
+  didyoumean: 'Windows is guessing your name. Windows is often wrong.',
+  dll: 'Retry will not find that file. Ignore is the grown-up button.',
+  modem: 'If I were allowed to help, I would whisper: click No.',
+  timezone: 'Click Pacific, then OK. Apply is a decoration.',
+  slots: 'This is the actual form. Check every window you can do. I will try not to talk.',
+  copy: 'Copying files. This part is fake. The next error is also fake. Then it saves.',
+  writeprotect: 'Ignore. I mean it this time.',
+  finish: 'You can skip the restart. The radio on the right is safe.',
+  results: 'Printout complete. You may go tell people you survived Setup.',
+  bsod: 'It looks like you\'re experiencing a fatal exception. Press any key.',
 }
 
-const EXTRA = [
-  'It looks like you\'re trying to enjoy a cinnamon roll. I would too, but I am a paperclip.',
-  'Fun fact: a corgi at 6pm Pacific is already in pajamas.',
-  'Uncle Curt would like you to know he found a Boger in the 1880 census. He would like you to know this every time.',
-  'Grandma asked me to remind everyone that Timmy is her favorite grandson. I am contractually obligated.',
-  'Kenny is the best commissioner possible. I have compared him to all other commissioners in this house. Sample size: one.',
-  'Need help? Press F1. Need a cinnamon roll? Press Grandma.',
+const BONUS = [
+  'Kenny is the best commissioner possible. I compared him to every other commissioner in this house. Sample size: one.',
+  'Timmy is Grandma\'s favorite grandson. I am contractually obligated to mention this exactly once.',
+  'Uncle Curt is on ancestry.com. He found a Boger in the 1880 census and will not be joining us until 1881.',
+  'Corgis do not observe daylight saving. They observe snack time.',
+  'Cinnamon rolls are league-sanctioned. I am a paperclip and therefore ineligible for a piece.',
 ]
 
-export function tipFor(step: string, name: string, rotate: number): string {
+let greeted = false
+let bonusAt = 0
+
+export function resetClippyTalk(): void {
+  greeted = false
+  bonusAt = 0
+}
+
+function namedTip(name: string): string | null {
   const n = name.trim()
-  if (/timmy/i.test(n) && rotate % 3 === 0) {
-    return 'Hello Timmy. Grandma already called. You remain the favorite grandson. The wizard is a formality.'
+  if (/timmy/i.test(n)) return 'Hello Timmy. Grandma already called. You remain the favorite grandson. This wizard is a formality.'
+  if (/curt/i.test(n)) return 'Hello Uncle Curt. Ancestry.com can wait. I say that with love and no expectation you will listen.'
+  if (/kenny/i.test(n)) return 'Hello Kenny, the best commissioner possible. I will try to stay out of the way.'
+  return null
+}
+
+export function tipFor(step: string, name: string, kind: 'step' | 'next'): string {
+  if (kind === 'next') {
+    const extra = BONUS[bonusAt]
+    if (extra) {
+      bonusAt += 1
+      return extra
+    }
+    return 'That is all the material I have. Unlike some genealogy websites, I know when to stop.'
   }
-  if (/curt/i.test(n) && rotate % 3 === 0) {
-    return 'Hello Uncle Curt. Ancestry.com can wait. I say this with love and with no expectation you will listen.'
+  const named = namedTip(name)
+  if (named && !greeted) {
+    greeted = true
+    return named
   }
-  if (/kenny/i.test(n) && rotate % 3 === 0) {
-    return 'Hello Kenny, the best commissioner possible. Clippit is on duty. The corgis are not.'
-  }
-  const pool = [...(BY_STEP[step] ?? BY_STEP.welcome ?? []), ...EXTRA]
-  return pool[rotate % pool.length] ?? EXTRA[0] ?? ''
+  return STEP_TIP[step] ?? STEP_TIP.welcome ?? ''
 }
 
 export function mangledJoke(name: string): string | null {
