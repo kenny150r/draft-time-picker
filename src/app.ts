@@ -14,7 +14,7 @@ import {
   unlockAudio,
 } from './audio.ts'
 import { clippySvg, loseTip, resetClippyTalk, tipFor, virusTip } from './clippy.ts'
-import { listResponses, submitAvailability, type DraftResponse } from './db.ts'
+import { listResponses, memberKey, submitAvailability, type DraftResponse } from './db.ts'
 import {
   drawGame,
   drawNext,
@@ -30,31 +30,11 @@ import {
   type Input,
   type Sfx,
 } from './drmario.ts'
-import { formatSlot, prettyDate, SLOTS, WEEK_LABELS, type Slot } from './slots.ts'
+import { formatSlot, groupDays, prettyDate, SLOTS, WEEK_LABELS, type Day } from './slots.ts'
 
 type Step = 'boot' | 'desktop' | 'welcome' | 'name' | 'slots' | 'drmario' | 'finish' | 'results'
 
 type Overlay = 'help' | 'cantclose' | 'exit' | 'exit-no' | 'run' | 'shutdown' | 'computer' | null
-
-type Day = {
-  date: string
-  weekday: string
-  slots: Slot[]
-}
-
-function groupDays(): Day[] {
-  const map = new Map<string, Slot[]>()
-  for (const slot of SLOTS) {
-    const list = map.get(slot.date) ?? []
-    list.push(slot)
-    map.set(slot.date, list)
-  }
-  return [...map.entries()].map(([date, slots]) => ({
-    date,
-    weekday: slots[0]?.weekday ?? '',
-    slots,
-  }))
-}
 
 const DAYS = groupDays()
 const FUNERAL_ID = '2026-09-06T18:00'
@@ -159,16 +139,6 @@ function esc(value: string): string {
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
-}
-
-function slug(name: string): string {
-  const s = name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40)
-  return s || 'member'
 }
 
 function eveningIds(day: Day): string[] {
@@ -769,7 +739,7 @@ async function transmit(): Promise<void> {
   try {
     await submitAvailability({
       display_name: state.name.trim(),
-      member_key: slug(state.name),
+      member_key: memberKey(state.name),
       available_slot_ids: [...state.selected],
       gauntlet_seconds: Math.max(1, Math.round((Date.now() - state.startedAt) / 1000)),
       rage_clicks: state.rage,

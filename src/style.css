@@ -801,3 +801,142 @@ progress {
     flex: 1 1 40%;
   }
 }
+
+body.sheet-page {
+  overflow: auto;
+}
+
+.sheet-desktop {
+  display: grid;
+  place-items: stretch;
+  padding: 12px 12px 16px;
+  box-sizing: border-box;
+}
+
+.windows-layer .window.sheet-win,
+.sheet-desktop .sheet-win {
+  width: min(960px, 100%);
+  max-height: none;
+  margin: 0 auto;
+}
+
+.sheet-body {
+  overflow: visible !important;
+}
+
+.sheet-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+.sheet-tabs button {
+  min-height: 28px;
+}
+
+.sheet-tabs button.active {
+  box-shadow: inset 1px 1px #000, inset -1px -1px #fff;
+  background: #fff;
+  font-weight: 700;
+}
+
+.sheet-best {
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+
+.sheet-add {
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sheet-add input {
+  flex: 1;
+  min-width: 140px;
+}
+
+.sheet-scroll {
+  overflow: auto;
+  max-height: min(70dvh, 640px);
+  background: #fff;
+  border: 2px inset #fff;
+}
+
+.sheet-grid {
+  border-collapse: collapse;
+  font-size: 11px;
+  min-width: 100%;
+}
+
+.sheet-grid th,
+.sheet-grid td {
+  border: 1px solid #808080;
+  padding: 2px 4px;
+  text-align: center;
+  background: #c0c0c0;
+}
+
+.sheet-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #000080;
+  color: #fff;
+  font-weight: 700;
+}
+
+.sheet-grid .sheet-slot {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: left;
+  white-space: nowrap;
+  background: #d4d0c8;
+  font-weight: 700;
+}
+
+.sheet-grid thead .sheet-slot {
+  z-index: 3;
+  background: #000080;
+  color: #fff;
+}
+
+.sheet-grid .sheet-week th {
+  background: #000080;
+  color: #fff;
+  text-align: left;
+  position: sticky;
+  left: 0;
+}
+
+.sheet-name {
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sheet-del {
+  min-width: 0 !important;
+  min-height: 20px !important;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.sheet-cell {
+  min-width: 28px !important;
+  min-height: 24px !important;
+  width: 100%;
+}
+
+.sheet-cell.on,
+.sheet-grid td.on {
+  background: #000080;
+  color: #fff;
+}
+
+.sheet-count {
+  font-weight: 700;
+}

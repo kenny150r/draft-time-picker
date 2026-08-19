@@ -1,11 +1,7 @@
 import '98.css'
 import './style.css'
-import { mount } from './app.ts'
 import { mountSheet } from './sheet.ts'
 
 const app = document.querySelector('#app')
 if (!(app instanceof HTMLElement)) throw new Error('Missing #app')
-
-const wantSheet = location.hash === '#sheet' || new URLSearchParams(location.search).has('sheet')
-if (wantSheet) mountSheet(app)
-else mount(app)
+mountSheet(app)

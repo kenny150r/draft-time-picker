@@ -70,6 +70,26 @@ export function formatSlot(id: string): string {
   return `${prettyDate(slot.date, slot.weekday)} · ${slot.time} PT`
 }
 
+export type Day = {
+  date: string
+  weekday: string
+  slots: Slot[]
+}
+
+export function groupDays(): Day[] {
+  const map = new Map<string, Slot[]>()
+  for (const slot of SLOTS) {
+    const list = map.get(slot.date) ?? []
+    list.push(slot)
+    map.set(slot.date, list)
+  }
+  return [...map.entries()].map(([date, slots]) => ({
+    date,
+    weekday: slots[0]?.weekday ?? '',
+    slots,
+  }))
+}
+
 if (SLOTS.length !== 42) {
   throw new Error(`Boger Bowl slot table is ${SLOTS.length}, expected 42`)
 }
