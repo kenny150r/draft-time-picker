@@ -1,6 +1,6 @@
 # Boger Bowl Draft Setup
 
-Windows 98 desktop with Clippit, a name + availability sheet, and a novelty Dr. Boger virus game.
+Windows 98 desktop with Ellie the golden retriever, a name + availability sheet, and a novelty Dr. Boger virus game.
 
 Live: https://kenny150r.github.io/draft-time-picker/
 

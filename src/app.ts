@@ -13,7 +13,7 @@ import {
   stopMusic,
   unlockAudio,
 } from './audio.ts'
-import { clippySvg, loseTip, resetClippyTalk, tipFor, virusTip } from './clippy.ts'
+import { ellieSvg, loseTip, resetClippyTalk, tipFor, virusTip } from './clippy.ts'
 import { listResponses, memberKey, submitAvailability, type DraftResponse } from './db.ts'
 import {
   drawGame,
@@ -39,7 +39,7 @@ type Overlay = 'help' | 'cantclose' | 'exit' | 'exit-no' | 'run' | 'shutdown' | 
 const DAYS = groupDays()
 const FUNERAL_ID = '2026-09-06T18:00'
 const HELP_PAGES = [
-  'Cannot open Help file.\n\nC:\\WINDOWS\\HELP\\BOGER.HLP\n\nClippit could not find the file either. Press F1 again if you enjoy this message.',
+  'Cannot open Help file.\n\nC:\\WINDOWS\\HELP\\BOGER.HLP\n\nEllie could not find the file either. She did find a tennis ball. Press F1 again if you enjoy this message.',
   'Dr. Boger says: match four of the same color in a row. Viruses count. You only need four of them gone.\n\nIf you fail, Setup continues. This is still not a draft timezone in Kansas.',
   'This is still not help.\n\nF1 has been retired for the rest of this session. Try surviving Setup instead.',
 ] as const
@@ -394,7 +394,7 @@ function currentView(): string {
           { label: 'Cancel', act: 'try-exit' },
           { label: 'Next >', act: 'to-name', def: true },
         ],
-        status: 'Clippit is already employed. Do not make eye contact.',
+        status: 'Ellie is already employed. Do not make eye contact if you are holding food.',
       })
     case 'name':
       return dialog({
@@ -519,7 +519,7 @@ function desktopIcons(): string {
     </button>
     <button type="button" class="desk-icon" data-act="clippy-summon">
       <span class="pic clip"></span>
-      <span>Clippit.exe</span>
+      <span>Ellie.exe</span>
     </button>
     <button type="button" class="desk-icon" data-act="printout">
       <span class="pic txt"></span>
@@ -534,7 +534,7 @@ function startMenu(): string {
       <div class="start-banner">Windows 98</div>
       <button type="button" data-act="open-wizard">Programs › Boger Bowl › Draft Wizard</button>
       <button type="button" data-act="open-mario">Programs › Accessories › Dr. Boger</button>
-      <button type="button" data-act="clippy-summon">Programs › Office › Office Assistant</button>
+      <button type="button" data-act="clippy-summon">Programs › Office › Ellie</button>
       <button type="button" disabled>Settings</button>
       <button type="button" disabled>Find</button>
       <button type="button" data-act="help">Help</button>
@@ -553,7 +553,7 @@ function taskButtons(): string {
 function clippyView(): string {
   if (state.step === 'boot') return ''
   if (!state.clippyOn) {
-    return `<button type="button" class="clippy-peek" data-act="clippy-summon" title="Clippit">📎</button>`
+    return `<button type="button" class="clippy-peek" data-act="clippy-summon" title="Ellie">🐕</button>`
   }
   return `
     <div class="clippy-dock">
@@ -569,8 +569,8 @@ function clippyView(): string {
             </div>`
           : ''
       }
-      <button type="button" class="clippy-btn ${state.clippyBalloon ? 'talk' : ''}" data-act="clippy-next" aria-label="Clippit">
-        ${clippySvg()}
+      <button type="button" class="clippy-btn ${state.clippyBalloon ? 'talk' : ''}" data-act="clippy-next" aria-label="Ellie">
+        ${ellieSvg()}
       </button>
     </div>`
 }
@@ -601,7 +601,7 @@ function chrome(): string {
       <div class="taskbar">
         <button type="button" class="start-btn ${state.startOpen ? 'active' : ''}" data-act="start">${winFlag()} Start</button>
         <div class="tasks">${taskButtons()}</div>
-        <div class="tray"><span class="tray-icon" title="Clippit">📎</span><span id="clock">${esc(state.clock)}</span></div>
+        <div class="tray"><span class="tray-icon" title="Ellie">🐕</span><span id="clock">${esc(state.clock)}</span></div>
       </div>
     </div>`
 }
@@ -1036,7 +1036,7 @@ function handle(act: string, el: HTMLElement): void {
       window.setTimeout(() => {
         if (state.step === 'boot') return
         state.clippyOn = true
-        state.clippyTip = 'I sensed you still needed me. Hide is more of a suggestion.'
+        state.clippyTip = 'I heard a bag rustle. Hide is more of a suggestion.'
         state.clippyBalloon = true
         render()
       }, 4200)
