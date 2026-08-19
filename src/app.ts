@@ -1,34 +1,40 @@
-import { chord, chordSad, ding, unlockAudio } from './audio.ts'
-import { clippySvg, mangledJoke, resetClippyTalk, tipFor } from './clippy.ts'
+import {
+  chord,
+  chordSad,
+  ding,
+  sfxClear,
+  sfxLand,
+  sfxLose,
+  sfxMove,
+  sfxRotate,
+  sfxVirus,
+  sfxWin,
+  startMusic,
+  stopMusic,
+  unlockAudio,
+} from './audio.ts'
+import { clippySvg, loseTip, resetClippyTalk, tipFor, virusTip } from './clippy.ts'
 import { listResponses, submitAvailability, type DraftResponse } from './db.ts'
+import {
+  drawGame,
+  drawNext,
+  fitScale,
+  giveUp,
+  hudOf,
+  newGame,
+  press,
+  release,
+  tick,
+  type Game,
+  type Hud,
+  type Input,
+  type Sfx,
+} from './drmario.ts'
 import { formatSlot, prettyDate, SLOTS, WEEK_LABELS, type Slot } from './slots.ts'
 
-type Step =
-  | 'boot'
-  | 'desktop'
-  | 'welcome'
-  | 'hang'
-  | 'license'
-  | 'name'
-  | 'didyoumean'
-  | 'dll'
-  | 'modem'
-  | 'timezone'
-  | 'slots'
-  | 'copy'
-  | 'writeprotect'
-  | 'finish'
-  | 'bsod'
-  | 'results'
+type Step = 'boot' | 'desktop' | 'welcome' | 'name' | 'slots' | 'drmario' | 'finish' | 'results'
 
-type Overlay = 'help' | 'cantclose' | 'exit' | 'exit-no' | 'run' | 'shutdown' | 'captcha' | null
-
-type CaptchaKind = 'bee' | 'clip' | 'ball' | 'pc' | 'folder' | 'plug'
-
-type CaptchaTile = {
-  i: number
-  kind: CaptchaKind
-}
+type Overlay = 'help' | 'cantclose' | 'exit' | 'exit-no' | 'run' | 'shutdown' | 'computer' | null
 
 type Day = {
   date: string
@@ -51,83 +57,12 @@ function groupDays(): Day[] {
 }
 
 const DAYS = groupDays()
-
-const CAPTCHA_FACE: Record<CaptchaKind, string> = {
-  bee: '🐝',
-  clip: '📎',
-  ball: '🏈',
-  pc: '🖥️',
-  folder: '📁',
-  plug: '🔌',
-}
-
-function shuffleCaptcha(): void {
-  const kinds: CaptchaKind[] = ['bee', 'bee', 'bee', 'clip', 'ball', 'pc', 'folder', 'plug', 'clip']
-  for (let i = kinds.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1))
-    const a = kinds[i]
-    const b = kinds[j]
-    if (a && b) {
-      kinds[i] = b
-      kinds[j] = a
-    }
-  }
-  state.captchaTiles = kinds.map((kind, i) => ({ i, kind }))
-  state.captchaPicks = new Set()
-}
-
-const HELP =
-  'Cannot open Help file.\n\nC:\\WINDOWS\\HELP\\BOGER.HLP\n\nClippit could not find the file either. Press F1 again if you enjoy this message.'
-
-type BootLine = { text: string; ms?: number; replace?: boolean }
-
-const BOOT_LINES: BootLine[] = [
-  { text: 'Award Modular BIOS v4.51PG, An Energy Star Ally', ms: 40 },
-  { text: 'Copyright (C) 1984-95  Boger Heavy Industries', ms: 40 },
-  { text: '', ms: 40 },
-  { text: 'CPU: Pentium 90 MHz  (optimistic)', ms: 70 },
-  { text: 'L2 Cache: 256K of unresolved feelings', ms: 90 },
-  { text: '', ms: 40 },
-  { text: 'Memory Test :      0K', ms: 50 },
-  { text: 'Memory Test :   1024K', ms: 55, replace: true },
-  { text: 'Memory Test :   2048K', ms: 55, replace: true },
-  { text: 'Memory Test :   4096K', ms: 55, replace: true },
-  { text: 'Memory Test :   8192K', ms: 55, replace: true },
-  { text: 'Memory Test :  12288K', ms: 70, replace: true },
-  { text: 'Memory Test :  16384K OK', ms: 160, replace: true },
-  { text: 'Memory Test :  16385K  (that last K is leftover guilt)', ms: 220 },
-  { text: '', ms: 50 },
-  { text: 'Detecting IDE drives.........', ms: 140 },
-  { text: '  Primary Master :  C:\\BOGER95   2.1 GB of snacks', ms: 90 },
-  { text: '  Primary Slave  :  none (as usual)', ms: 90 },
-  { text: '  Secondary Master: CD-ROM containing one AOL disk', ms: 110 },
-  { text: '', ms: 40 },
-  { text: 'Plug and Play BIOS Extension v1.0A', ms: 80 },
-  { text: '  Found: Generic 2-button mouse', ms: 70 },
-  { text: '  Found: Generic 2-button mouse (again)', ms: 90 },
-  { text: '  Found: Unidentified pointing device (cat)', ms: 140 },
-  { text: '', ms: 40 },
-  { text: 'HIMEM.SYS loaded', ms: 70 },
-  { text: 'EMM386.EXE  Expanded memory unavailable and we are not sorry', ms: 110 },
-  { text: 'SMARTDRV 5.00  write-behind caching your excuses', ms: 110 },
-  { text: 'DBLSPACE  compressing leftover feelings', ms: 110 },
-  { text: '', ms: 40 },
-  { text: 'Initializing Microsoft Windows 95...', ms: 160 },
-  { text: '  KERNEL32.DLL     OK', ms: 70 },
-  { text: '  USER.EXE         OK', ms: 70 },
-  { text: '  GDI.EXE          OK', ms: 70 },
-  { text: '  TIMES.DRV        Pacific only; clock blinking 12:00', ms: 140 },
-  { text: '  MODEM.CPL        no dial tone, as is tradition', ms: 140 },
-  { text: '  CLIPPIT.EXE      already in the system tray', ms: 140 },
-  { text: '  DRAFT.CPL        loaded (actual clock not included)', ms: 140 },
-  { text: '', ms: 50 },
-  { text: 'WARNING: Recycle Bin contains files you will miss later', ms: 160 },
-  { text: 'WARNING: System time is 11:59 AM and will remain so', ms: 160 },
-  { text: '', ms: 50 },
-  { text: 'Starting Windows 95...', ms: 420 },
-]
-
-let bootLeaving = false
+const FUNERAL_ID = '2026-09-06T18:00'
+const HELP_PAGES = [
+  'Cannot open Help file.\n\nC:\\WINDOWS\\HELP\\BOGER.HLP\n\nClippit could not find the file either. Press F1 again if you enjoy this message.',
+  'Dr. Boger says: match four of the same color in a row. Viruses count. You only need four of them gone.\n\nIf you fail, Setup continues. This is still not a draft timezone in Kansas.',
+  'This is still not help.\n\nF1 has been retired for the rest of this session. Try surviving Setup instead.',
+] as const
 
 type State = {
   step: Step
@@ -136,27 +71,20 @@ type State = {
   startOpen: boolean
   name: string
   selected: Set<string>
-  dllTries: number
-  copyTries: number
-  progress: number
-  restartNow: boolean
-  noAgree: boolean
-  tzOk: boolean
-  rage: number
-  dialogs: number
-  startedAt: number
   results: DraftResponse[] | null
   error: string
   sending: boolean
   clippyOn: boolean
   clippyBalloon: boolean
   clippyTip: string
-  captchaOk: boolean
-  captchaFails: number
-  captchaRobot: boolean
-  captchaPicks: Set<number>
-  captchaTiles: CaptchaTile[]
-  captchaMsg: string
+  helpAt: number
+  weeknightsBetrayed: boolean
+  slotsNote: string
+  rage: number
+  dialogs: number
+  startedAt: number
+  clock: string
+  marioHud: Hud | null
 }
 
 const state: State = {
@@ -166,31 +94,55 @@ const state: State = {
   startOpen: false,
   name: '',
   selected: new Set(),
-  dllTries: 0,
-  copyTries: 0,
-  progress: 0,
-  restartNow: true,
-  noAgree: false,
-  tzOk: false,
-  rage: 0,
-  dialogs: 0,
-  startedAt: Date.now(),
   results: null,
   error: '',
   sending: false,
   clippyOn: true,
   clippyBalloon: true,
   clippyTip: '',
-  captchaOk: false,
-  captchaFails: 0,
-  captchaRobot: false,
-  captchaPicks: new Set(),
-  captchaTiles: [],
-  captchaMsg: '',
+  helpAt: 0,
+  weeknightsBetrayed: false,
+  slotsNote: '',
+  rage: 0,
+  dialogs: 0,
+  startedAt: Date.now(),
+  clock: '11:59 AM',
+  marioHud: null,
 }
 
 let timers: number[] = []
 let drag: { dx: number; dy: number } | null = null
+let game: Game | null = null
+let gameRaf = 0
+let lastTs = 0
+let gamePaused = false
+
+const sfx: Sfx = {
+  move: sfxMove,
+  rotate: sfxRotate,
+  land: sfxLand,
+  clear: sfxClear,
+  virus: () => {
+    sfxVirus()
+    if (game) speakMario()
+  },
+  lose: () => {
+    sfxLose()
+    state.clippyTip = loseTip()
+    state.clippyBalloon = true
+    state.clippyOn = true
+    paintClippy()
+    paintMarioChrome()
+  },
+  win: () => {
+    sfxWin()
+    state.clippyTip = virusTip(0)
+    state.clippyBalloon = true
+    state.clippyOn = true
+    paintClippy()
+    paintMarioChrome()
+  },
+}
 
 function later(fn: () => void, ms: number): void {
   timers.push(window.setTimeout(fn, ms))
@@ -219,23 +171,6 @@ function slug(name: string): string {
   return s || 'member'
 }
 
-function mangled(name: string): string {
-  const joke = mangledJoke(name)
-  if (joke) return joke
-  const t = name.trim()
-  if (/boger/i.test(t)) return t.replace(/boger/gi, 'Booger')
-  if (t.length < 2) return 'Player 2'
-  const chars = [...t]
-  const i = Math.max(0, chars.length - 2)
-  const a = chars[i]
-  const b = chars[i + 1]
-  if (a && b) {
-    chars[i] = b
-    chars[i + 1] = a
-  }
-  return chars.join('')
-}
-
 function eveningIds(day: Day): string[] {
   return day.slots.filter((s) => s.hour >= 18).map((s) => s.id)
 }
@@ -262,6 +197,7 @@ function dialog(opts: {
   extra?: string
   status?: string
   wide?: boolean
+  klass?: string
 }): string {
   const buttons = opts.buttons
     .map(
@@ -270,7 +206,7 @@ function dialog(opts: {
     )
     .join('')
   return `
-    <div class="window dialog-win ${opts.wide ? 'slots-win' : ''}" data-window="main">
+    <div class="window dialog-win ${opts.wide ? 'slots-win' : ''} ${opts.klass ?? ''}" data-window="main">
       <div class="title-bar" data-drag>
         <div class="title-bar-text">${esc(opts.title)}</div>
         <div class="title-bar-controls">
@@ -291,13 +227,18 @@ function dialog(opts: {
     </div>`
 }
 
-function overlayWin(title: string, body: string, buttons: { label: string; act: string; def?: boolean }[]): string {
+function overlayWin(
+  title: string,
+  body: string,
+  buttons: { label: string; act: string; def?: boolean }[],
+  klass = '',
+): string {
   const btns = buttons
     .map((b) => `<button type="button" class="${b.def ? 'default' : ''}" data-act="${b.act}">${esc(b.label)}</button>`)
     .join('')
   return `
     <div class="modal-scrim">
-      <div class="window overlay-win">
+      <div class="window overlay-win ${klass}">
         <div class="title-bar">
           <div class="title-bar-text">${esc(title)}</div>
           <div class="title-bar-controls">
@@ -315,175 +256,68 @@ function overlayWin(title: string, body: string, buttons: { label: string; act: 
     </div>`
 }
 
-function currentView(): string {
-  switch (state.step) {
-    case 'welcome':
-      return dialog({
-        title: 'Boger Bowl Draft Time Setup Wizard',
-        icon: 'info',
-        body: `<p>Welcome to the Boger Bowl Draft Time Setup Wizard.</p><p>This wizard will help you tell the commissioner when you can draft. The first several screens are decorative. The availability list is not.</p><p>All times are Pacific. Click Next to continue.</p>`,
-        buttons: [
-          { label: '< Back', act: 'noop', disabled: true },
-          { label: 'Cancel', act: 'try-exit' },
-          { label: 'Next >', act: 'to-hang', def: true },
-        ],
-        status: 'Setup has not begun, but it is already disappointed.',
-      })
-    case 'hang':
-      return dialog({
-        title: 'BogerBowl.exe',
-        icon: 'error',
-        body: `<p><strong>This program has performed an illegal operation and will be shut down.</strong></p><p>If the problem persists, contact the commissioner. Do not contact Microsoft.</p>`,
-        extra: `<button type="button" data-act="details">Details &gt;&gt;</button><pre class="details hidden" id="details">BOGERBOWL caused a General Protection Fault in
-module TIMES.DRV at 0002:1A4F.
-Registers:
-EAX=00000006  EBX=00000700
-ECX=DECAFBAD  EDX=00000000
-Stack dump: 6PM 7PM 9AM 1PM PT PT PT</pre>`,
-        buttons: [
-          { label: 'Close', act: 'to-license', def: true },
-          { label: 'Help', act: 'help' },
-        ],
-      })
-    case 'license':
-      return dialog({
-        title: 'Software License Agreement',
-        icon: 'warning',
-        body: `<p>Please read the following license agreement.</p>`,
-        extra: `<textarea readonly class="license">${LICENSE}</textarea>
-          <div class="field-row">
-            <input type="checkbox" id="agree" data-act="fake-agree">
-            <label for="agree">I agree to these terms</label>
-          </div>
-          <div class="field-row">
-            <input type="checkbox" id="noagree" data-act="no-agree" ${state.noAgree ? 'checked' : ''}>
-            <label for="noagree">I have not read this and that is fine</label>
-          </div>`,
-        buttons: [
-          { label: '< Back', act: 'to-hang' },
-          { label: 'Next >', act: 'to-name', def: true, disabled: !state.noAgree },
-          { label: 'Cancel', act: 'try-exit' },
-        ],
-      })
-    case 'name':
-      return dialog({
-        title: 'User Information',
-        body: `<p>Type your name as you would like it to appear on the league printout.</p><p>Company is not optional. It has already been filled in.</p>`,
-        extra: `<div class="field-row-stacked">
-            <label for="name">Name:</label>
-            <input id="name" type="text" maxlength="80" value="${esc(state.name)}" data-act="name" />
-          </div>
-          <div class="field-row-stacked">
-            <label>Company:</label>
-            <input type="text" value="Boger Bowl LLC" readonly />
-          </div>`,
-        buttons: [
-          { label: 'Browse...', act: 'browse' },
-          { label: 'Next >', act: 'to-mean', def: true },
-          { label: 'Cancel', act: 'try-exit' },
-        ],
-      })
-    case 'didyoumean':
-      return dialog({
-        title: 'AutoCorrect',
-        icon: 'question',
-        body: `<p>Did you mean:</p><p class="big-name">“${esc(mangled(state.name))}”</p><p>Windows is reasonably sure this is your name.</p>`,
-        buttons: [
-          { label: 'Yes', act: 'mean-yes', def: true },
-          { label: 'No', act: 'mean-no' },
-          { label: 'Help', act: 'help' },
-        ],
-      })
-    case 'dll':
-      return dialog({
-        title: 'BogerBowl.exe - Unable To Locate Component',
-        icon: 'error',
-        body: `<p>This application has failed to start because <strong>BOGER32.DLL</strong> was not found. Re-installing the application may fix this problem. It will not.</p><p>Retries: ${state.dllTries}</p>`,
-        buttons: [
-          { label: 'Abort', act: 'dll-abort' },
-          { label: 'Retry', act: 'dll-retry', def: true },
-          { label: 'Ignore', act: 'dll-ignore' },
-        ],
-      })
-    case 'modem':
-      return dialog({
-        title: 'Dial-Up Networking',
-        icon: 'question',
-        body: `<p>Setup needs to connect to League Headquarters (1-800-BOGER) to continue.</p><p>Are you connected to the Internet?</p>`,
-        buttons: [
-          { label: 'Yes', act: 'modem-yes', def: true },
-          { label: 'No', act: 'modem-no' },
-          { label: 'Help', act: 'help' },
-        ],
-      })
-    case 'timezone':
-      return dialog({
-        title: 'Date/Time Properties',
-        body: `<p>All draft times are Pacific. If you are in Mountain, do not “just add an hour in your head.” We will add it incorrectly for you.</p>`,
-        extra: `<fieldset>
-            <legend>Time zone</legend>
-            <div class="field-row">
-              <input id="tz1" type="radio" name="tz" data-act="tz" ${state.tzOk ? 'checked' : ''}>
-              <label for="tz1">(GMT-08:00) Pacific Time (US & Canada); Tijuana</label>
+function clockLabel(): string {
+  return new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
+function marioStatus(): string {
+  const hud = state.marioHud
+  if (!hud) return 'Insert quarter (metaphorically)'
+  if (hud.status === 'won') return 'All viruses cleared. You may continue Setup.'
+  if (hud.status === 'lost') return 'Patient released against medical advice. Setup continues anyway.'
+  return `${hud.virusesLeft} virus${hud.virusesLeft === 1 ? '' : 'es'} remaining · score ${hud.score}`
+}
+
+function marioView(): string {
+  const hud = state.marioHud
+  const over = hud?.status === 'won' || hud?.status === 'lost'
+  const nextLabel = hud?.status === 'won' ? 'Next >' : 'Continue anyway'
+  return `
+    <div class="window dialog-win mario-win" data-window="main">
+      <div class="title-bar" data-drag>
+        <div class="title-bar-text">Dr. Boger (Evaluation Copy)</div>
+        <div class="title-bar-controls">
+          <button type="button" aria-label="Minimize" data-act="min"></button>
+          <button type="button" aria-label="Maximize" data-act="max"></button>
+          <button type="button" aria-label="Close" data-act="x"></button>
+        </div>
+      </div>
+      <div class="window-body mario-body">
+        <p class="mario-lead">Windows 98 detected <strong>4 viruses</strong>. Clear them with capsules. Same color, four in a row.</p>
+        <div class="mario-stage">
+          <canvas id="mario" class="mario-canvas" width="192" height="352" aria-label="Dr. Boger bottle"></canvas>
+          <aside class="mario-hud">
+            <div class="nes-panel">
+              <div class="nes-label">VIRUS</div>
+              <div class="nes-value" id="mario-virus">${String(hud?.virusesLeft ?? 4).padStart(2, '0')}</div>
             </div>
-            <div class="field-row">
-              <input id="tz2" type="radio" name="tz">
-              <label for="tz2">(GMT-07:00) Mountain Time, which is basically Pacific</label>
+            <div class="nes-panel">
+              <div class="nes-label">SCORE</div>
+              <div class="nes-value" id="mario-score">${String(hud?.score ?? 0).padStart(6, '0')}</div>
             </div>
-          </fieldset>
-          <div class="field-row">
-            <input type="checkbox" id="clock" checked disabled>
-            <label for="clock">Automatically adjust clock for daylight saving changes</label>
-          </div>`,
-        buttons: [
-          { label: 'Apply', act: 'tz-apply' },
-          { label: 'OK', act: 'to-days', def: true },
-          { label: 'Cancel', act: 'try-exit' },
-        ],
-      })
-    case 'slots':
-      return slotsView()
-    case 'copy':
-      return dialog({
-        title: 'Copying Files',
-        body: `<p>Please wait while Setup copies Boger Bowl files to your computer.</p><p id="copy-file">Copying: C:\\WINDOWS\\TEMP\\BOGER.EXE</p>`,
-        extra: `<div class="progress-indicator segmented copy-bar"><span class="progress-indicator-bar" id="bar" style="width: ${state.progress}%"></span></div>`,
-        buttons: [{ label: 'Cancel', act: 'try-exit' }],
-        status: `${state.progress}% complete`,
-      })
-    case 'writeprotect':
-      return dialog({
-        title: 'Error Copying File',
-        icon: 'error',
-        body: `<p>Cannot create or replace C:\\Program Files\\BogerBowl\\TIMES.DAT</p><p>The disk is write-protected. Remove the write-protection or use another disk. This is a website.</p>`,
-        buttons: [
-          { label: 'Abort', act: 'wp-abort' },
-          { label: 'Retry', act: 'wp-retry', def: true },
-          { label: 'Ignore', act: 'wp-ignore' },
-        ],
-      })
-    case 'finish':
-      return dialog({
-        title: 'Setup Complete',
-        icon: 'info',
-        body: `<p>Setup has finished copying files to your computer.</p><p>Before you can use Boger Bowl Draft Times, you must restart Windows.</p>`,
-        extra: `<fieldset>
-            <div class="field-row">
-              <input id="r1" type="radio" name="rs" data-act="rs-yes" ${state.restartNow ? 'checked' : ''}>
-              <label for="r1">Yes, I want to restart my computer now.</label>
+            <div class="nes-panel">
+              <div class="nes-label">NEXT</div>
+              <canvas id="mario-next" class="mario-next" width="84" height="42"></canvas>
             </div>
-            <div class="field-row">
-              <input id="r2" type="radio" name="rs" data-act="rs-no" ${state.restartNow ? '' : 'checked'}>
-              <label for="r2">No, I will restart my computer later.</label>
-            </div>
-          </fieldset>`,
-        buttons: [{ label: 'Finish', act: 'finish', def: true }],
-      })
-    case 'results':
-      return resultsView()
-    default:
-      return ''
-  }
+            <p class="mario-keys">← → move<br>↓ drop · ↑ rotate<br>Space hard drop</p>
+          </aside>
+        </div>
+        <div class="mario-pad" aria-label="On-screen controls">
+          <button type="button" data-act="m-left">◀</button>
+          <button type="button" data-act="m-down">▼</button>
+          <button type="button" data-act="m-right">▶</button>
+          <button type="button" data-act="m-rot">↻</button>
+          <button type="button" data-act="m-drop">DROP</button>
+        </div>
+        <p class="mario-msg" id="mario-msg">${esc(marioStatus())}</p>
+        <div class="dlg-btns">
+          <button type="button" data-act="mario-retry">New bottle</button>
+          <button type="button" data-act="mario-quit">${over && hud?.status === 'lost' ? 'I am not a doctor' : 'I give up'}</button>
+          <button type="button" class="default" data-act="mario-next" ${over ? '' : 'disabled'}>${nextLabel}</button>
+        </div>
+      </div>
+      <div class="status-bar"><p class="status-bar-field" id="mario-status">${esc(marioStatus())}</p></div>
+    </div>`
 }
 
 function slotsView(): string {
@@ -494,7 +328,11 @@ function slotsView(): string {
         const boxes = day.slots
           .map((s) => {
             const on = state.selected.has(s.id)
-            return `<label class="time-check"><input type="checkbox" data-act="toggle" data-id="${s.id}" ${on ? 'checked' : ''}> ${s.time}</label>`
+            const boxId = `slot-${s.id.replace(/[^a-zA-Z0-9]/g, '-')}`
+            return `<div class="field-row time-check">
+              <input id="${boxId}" type="checkbox" data-act="toggle" data-id="${s.id}" ${on ? 'checked' : ''}>
+              <label for="${boxId}">${s.time}</label>
+            </div>`
           })
           .join('')
         return `<div class="day-row"><span class="day-name">${prettyDate(day.date, day.weekday)}</span><span class="time-checks">${boxes}</span></div>`
@@ -504,15 +342,15 @@ function slotsView(): string {
   }).join('')
   return dialog({
     title: 'Available Draft Times',
-    body: `<p>Check every window you can do. All times are Pacific. Weekends include 9:00 AM and 1:00 PM.</p><p class="inlaw-hint">Buy-ins may be higher for in-laws this year. Darien, Jack — filling out your wives' boards still counts.</p>`,
+    body: `<p>Check every window you can do. All times are <strong>Pacific</strong>. Weekends include 9:00 AM and 1:00 PM.</p><p class="inlaw-hint">Buy-ins may be higher for in-laws this year. Darien, Jack — filling out your wives' boards still counts.</p>`,
     extra: `<div class="slot-sheet">${weeks}</div>`,
     buttons: [
-      { label: '< Back', act: 'to-timezone' },
+      { label: '< Back', act: 'to-name' },
       { label: 'Weeknights', act: 'weeknights' },
       { label: 'Clear', act: 'clear-slots' },
-      { label: 'Next >', act: 'to-copy', def: true },
+      { label: 'Next >', act: 'to-mario', def: true },
     ],
-    status: `${state.selected.size} window${state.selected.size === 1 ? '' : 's'} checked · Pacific Time`,
+    status: `${state.selected.size} window${state.selected.size === 1 ? '' : 's'} checked · Pacific Time${state.slotsNote ? ` · ${state.slotsNote}` : ''}`,
     wide: true,
   })
 }
@@ -536,6 +374,11 @@ function resultsView(): string {
       return `${formatSlot(id).padEnd(28, ' ')} ${bar} ${n}  ${names.join(', ') || '—'}`
     })
     .join('\n')
+  const hud = state.marioHud
+  const med =
+    hud?.status === 'won'
+      ? `Dr. Boger residency: PASSED (${hud.virusesCleared} viruses)`
+      : `Dr. Boger residency: waived (${hud?.virusesCleared ?? 0} viruses, Setup took pity)`
   return `
     <div class="window notepad" data-window="main">
       <div class="title-bar" data-drag>
@@ -553,14 +396,15 @@ function resultsView(): string {
           <li role="menuitem" data-act="help">Search</li>
           <li role="menuitem" data-act="help">Help</li>
         </menu>
-        <textarea readonly class="notepad-text">BOGER BOWL — LEAGUE HEADQUARTERS PRINTOUT
-Submitted as: ${state.name}
-Windows selected: ${state.selected.size}
-Rage clicks: ${state.rage}
-Dialogs survived: ${state.dialogs}
+        <textarea readonly class="notepad-text">BOGER BOWL — LEAGUE SECRETARY PRINTOUT
+Windows 98 Workstation
 
-COMMISSIONER'S TENTATIVE PICK
-${best ? `${formatSlot(best[0])}\n${best[1].join(', ')}` : '(none yet — you are first)'}
+Submitted as: ${state.name}
+Windows checked: ${state.selected.size}
+${med}
+
+TENTATIVE PICK (subject to Sunday, cinnamon, and Kansas)
+${best ? `${formatSlot(best[0])}\n${best[1].join(', ')}` : '(none yet — you are first. congratulations?)'}
 
 ${lines}
 </textarea>
@@ -568,48 +412,104 @@ ${lines}
     </div>`
 }
 
-const LICENSE = `BOGER BOWL SOFTWARE LICENSE AGREEMENT
-
-IMPORTANT — READ NONE OF THIS.
-
-1. GRANT OF LICENSE. You may click Next.
-2. TIMES. All times are Pacific. "Around 6" is not a time.
-3. The commissioner may ignore this form and pick Sunday anyway.
-4. CINNAMON ROLLS are league-sanctioned. Clippit is not entitled to any.
-5. Uncle Curt may discover a new third cousin at any moment. This does not pause the draft.
-6. Timmy remains Grandma's favorite grandson. This agreement cannot change that.
-7. Kenny is the best commissioner possible. This clause is not negotiable.
-8. Corgis are not draft-eligible. They already run the house.`
+function currentView(): string {
+  switch (state.step) {
+    case 'welcome':
+      return dialog({
+        title: 'Boger Bowl Draft Time Setup Wizard',
+        icon: 'info',
+        body: `<p>Welcome to the Boger Bowl Draft Time Setup Wizard, now running on <strong>Microsoft Windows 98</strong>.</p><p>This wizard will ask your name, when you can draft, and then require a short medical residency in Dr. Boger.</p><p>All times are Pacific. Click Next to continue.</p>`,
+        buttons: [
+          { label: '< Back', act: 'noop', disabled: true },
+          { label: 'Cancel', act: 'try-exit' },
+          { label: 'Next >', act: 'to-name', def: true },
+        ],
+        status: 'Clippit is already employed. Do not make eye contact.',
+      })
+    case 'name':
+      return dialog({
+        title: 'User Information',
+        body: `<p>Type your name as you would like it to appear on the league printout.</p><p>Company is not optional. It has already been filled in.</p>`,
+        extra: `<div class="field-row-stacked">
+            <label for="name">Name:</label>
+            <input id="name" type="text" maxlength="80" value="${esc(state.name)}" data-act="name" />
+          </div>
+          <div class="field-row-stacked">
+            <label>Company:</label>
+            <input type="text" value="Boger Bowl LLC" readonly />
+          </div>`,
+        buttons: [
+          { label: '< Back', act: 'to-welcome' },
+          { label: 'Next >', act: 'to-slots', def: true },
+          { label: 'Cancel', act: 'try-exit' },
+        ],
+      })
+    case 'slots':
+      return slotsView()
+    case 'drmario':
+      return marioView()
+    case 'finish':
+      return dialog({
+        title: 'Copying Files',
+        icon: 'info',
+        body: `<p>Please wait while Setup dials League Headquarters and files your times.</p><p>${state.error ? esc(state.error) : 'Connecting to 1-800-BOGER...'}</p>`,
+        extra: `<div class="progress-indicator segmented copy-bar"><span class="progress-indicator-bar" id="bar" style="width: ${state.sending ? 70 : 20}%"></span></div>`,
+        buttons: [{ label: 'Cancel', act: 'try-exit' }],
+        status: state.sending ? 'Saving...' : 'Ready',
+      })
+    case 'results':
+      return resultsView()
+    default:
+      return ''
+  }
+}
 
 function overlayView(): string {
   if (!state.overlay) return ''
   if (state.overlay === 'help') {
-    return overlayWin('Windows Help', `<pre class="help-pre">${esc(HELP)}</pre>`, [
+    const page = HELP_PAGES[Math.min(state.helpAt, HELP_PAGES.length - 1)] ?? HELP_PAGES[0]
+    return overlayWin('Windows Help', `<pre class="help-pre">${esc(page)}</pre>`, [
       { label: 'OK', act: 'overlay-ok', def: true },
     ])
+  }
+  if (state.overlay === 'computer') {
+    return overlayWin(
+      'My Computer',
+      `<p>Select a drive. None of these contain draft times.</p>
+        <div class="drive-list">
+          <div>A:  3½ Floppy (Truck) — media not ready</div>
+          <div>C:  BOGER98 (Kansas, still sucks)</div>
+          <div>D:  Cinnamon Rolls (read-only)</div>
+          <div>E:  DrBoger.vxd — 4 viruses loaded</div>
+        </div>`,
+      [{ label: 'OK', act: 'overlay-ok', def: true }],
+      'computer-win',
+    )
   }
   if (state.overlay === 'cantclose') {
     return overlayWin(
       'Boger Bowl Setup',
-      `<p>You cannot quit Setup. Choose Next to continue.</p><p>The close box is decorative, like a screen saver of fish.</p>`,
+      `<p>You cannot quit Setup. Choose Next to continue.</p><p>The close box is decorative, like Active Desktop.</p>`,
       [{ label: 'OK', act: 'overlay-ok', def: true }],
     )
   }
   if (state.overlay === 'exit') {
-    return overlayWin('Exit Setup', `<p>Are you sure you want to exit Setup?</p><p>If you exit now, the commissioner will not know when you can draft.</p>`, [
-      { label: 'Yes', act: 'exit-yes' },
-      { label: 'No', act: 'overlay-ok', def: true },
-    ])
+    return overlayWin(
+      'Exit Setup',
+      `<p>Are you sure you want to exit Setup?</p><p>If you exit now, the commissioner will not know when you can draft.</p>`,
+      [
+        { label: 'Yes', act: 'exit-yes' },
+        { label: 'No', act: 'overlay-ok', def: true },
+      ],
+    )
   }
   if (state.overlay === 'exit-no') {
-    return overlayWin('Exit Setup', `<p>You cannot exit Setup.</p>`, [
-      { label: 'OK', act: 'overlay-ok', def: true },
-    ])
+    return overlayWin('Exit Setup', `<p>You cannot exit Setup.</p>`, [{ label: 'OK', act: 'overlay-ok', def: true }])
   }
   if (state.overlay === 'run') {
     return overlayWin(
       'Run',
-      `<div class="field-row-stacked"><label>Type the name of a program, folder, document, or Internet resource, and Windows will open it for you.</label><input value="C:\\WINDOWS\\BOGER.EXE" data-act="run-path" /></div>`,
+      `<div class="field-row-stacked"><label>Type the name of a program, folder, document, or Internet resource, and Windows will open it for you.</label><input value="C:\\WINDOWS\\DRBOGER.EXE" data-act="run-path" /></div>`,
       [
         { label: 'OK', act: 'run-ok', def: true },
         { label: 'Cancel', act: 'overlay-ok' },
@@ -625,43 +525,6 @@ function overlayView(): string {
         { label: 'No, continue Setup', act: 'overlay-ok', def: true },
       ],
     )
-  }
-  if (state.overlay === 'captcha') {
-    const tiles = state.captchaTiles
-      .map((t) => {
-        const on = state.captchaPicks.has(t.i)
-        return `<button type="button" class="captcha-tile ${on ? 'on' : ''}" data-act="captcha-tile" data-i="${t.i}" aria-label="${t.kind}">${CAPTCHA_FACE[t.kind]}</button>`
-      })
-      .join('')
-    return `
-      <div class="modal-scrim">
-        <div class="window overlay-win captcha-win">
-          <div class="title-bar">
-            <div class="title-bar-text">Boger Bowl Security</div>
-            <div class="title-bar-controls">
-              <button type="button" aria-label="Close" data-act="captcha-x"></button>
-            </div>
-          </div>
-          <div class="window-body">
-            <p>Select all squares with honey bees.</p>
-            <p class="captcha-sub">If there are none, click Skip. There are some. Skip is decorative.</p>
-            <div class="field-row">
-              <input id="robot" type="checkbox" data-act="captcha-robot" ${state.captchaRobot ? 'checked' : ''}>
-              <label for="robot">I am not a robot</label>
-            </div>
-            ${
-              state.captchaRobot
-                ? `<div class="captcha-grid">${tiles}</div>`
-                : `<p class="captcha-wait">Check the box to load images. This may take 1995.</p>`
-            }
-            <p class="captcha-msg">${esc(state.captchaMsg)}</p>
-            <div class="dlg-btns">
-              <button type="button" data-act="captcha-skip">Skip</button>
-              <button type="button" class="default" data-act="captcha-verify">Verify</button>
-            </div>
-          </div>
-        </div>
-      </div>`
   }
   return ''
 }
@@ -680,6 +543,10 @@ function desktopIcons(): string {
       <span class="pic exe"></span>
       <span>Draft Times<br>Setup.exe</span>
     </button>
+    <button type="button" class="desk-icon" data-act="open-mario">
+      <span class="pic virus"></span>
+      <span>Dr. Boger</span>
+    </button>
     <button type="button" class="desk-icon" data-act="clippy-summon">
       <span class="pic clip"></span>
       <span>Clippit.exe</span>
@@ -694,8 +561,9 @@ function startMenu(): string {
   if (!state.startOpen) return ''
   return `
     <div class="start-menu">
-      <div class="start-banner">Windows 95</div>
+      <div class="start-banner">Windows 98</div>
       <button type="button" data-act="open-wizard">Programs › Boger Bowl › Draft Wizard</button>
+      <button type="button" data-act="open-mario">Programs › Accessories › Dr. Boger</button>
       <button type="button" data-act="clippy-summon">Programs › Office › Office Assistant</button>
       <button type="button" disabled>Settings</button>
       <button type="button" disabled>Find</button>
@@ -707,8 +575,8 @@ function startMenu(): string {
 }
 
 function taskButtons(): string {
-  if (state.step === 'boot' || state.step === 'desktop' || state.step === 'bsod') return ''
-  const title = state.step === 'results' ? 'Notepad - Availability.txt' : 'Boger Bowl Setup'
+  if (state.step === 'boot' || state.step === 'desktop') return ''
+  const title = state.step === 'results' ? 'Notepad - Availability.txt' : state.step === 'drmario' ? 'Dr. Boger' : 'Boger Bowl Setup'
   return `<button type="button" class="task ${state.minimized ? '' : 'active'}" data-act="restore">${esc(title)}</button>`
 }
 
@@ -722,7 +590,7 @@ function clippyView(): string {
       ${
         state.clippyBalloon
           ? `<div class="clippy-bubble">
-              <p>${esc(state.clippyTip)}</p>
+              <p id="clippy-text">${esc(state.clippyTip)}</p>
               <div class="clippy-actions">
                 <button type="button" data-act="clippy-next">Next tip</button>
                 <button type="button" data-act="clippy-ok">OK</button>
@@ -739,23 +607,22 @@ function clippyView(): string {
 
 function chrome(): string {
   if (state.step === 'boot') {
-    return `<div class="boot-screen" data-act="skip-boot" tabindex="0">
-      <div class="window boot-win">
-        <div class="title-bar">
-          <div class="title-bar-text">${winFlag()} Microsoft Windows 95</div>
-        </div>
-        <div class="window-body">
-          <pre class="boot-log" id="boot-log"></pre>
-          <p class="boot-hint">Click or press any key to skip POST. (You will still have to do the wizard.)</p>
+    return `<div class="win98-splash" data-act="skip-boot" tabindex="0">
+      <div class="clouds" aria-hidden="true"></div>
+      <div class="splash-mark">
+        <div class="splash-flag">${winFlag()}</div>
+        <div class="splash-words">
+          <span class="ms">Microsoft</span>
+          <span class="win">Windows <em>98</em></span>
+          <span class="sub">Boger Bowl Edition</span>
         </div>
       </div>
+      <div class="splash-bar"><span class="splash-fill"></span></div>
+      <p class="splash-hint">Starting Draft Setup... Click or press any key to skip.</p>
     </div>`
   }
-  if (state.step === 'bsod') {
-    return `<div class="bsod" data-act="bsod-key"><p>Windows</p><p>A fatal exception 0E has occurred at 0028:C0001BAD in VXD BOGER(01) + 000006PM. The current application will be terminated.</p><p>* Press any key to continue _</p></div>`
-  }
   return `
-    <div class="desktop">
+    <div class="desktop ${state.step === 'drmario' ? 'mario-open' : ''}">
       <div class="icons">${desktopIcons()}</div>
       <div class="windows-layer ${state.minimized ? 'hidden' : ''}" id="wins">${currentView()}</div>
       ${overlayView()}
@@ -764,13 +631,9 @@ function chrome(): string {
       <div class="taskbar">
         <button type="button" class="start-btn ${state.startOpen ? 'active' : ''}" data-act="start">${winFlag()} Start</button>
         <div class="tasks">${taskButtons()}</div>
-        <div class="tray">11:59 AM</div>
+        <div class="tray"><span class="tray-icon" title="Clippit">📎</span><span id="clock">${esc(state.clock)}</span></div>
       </div>
     </div>`
-}
-
-function bumpDialog(): void {
-  state.dialogs += 1
 }
 
 function speakClippy(step: string = state.step): void {
@@ -785,93 +648,124 @@ function bumpClippy(): void {
   state.clippyOn = true
 }
 
+function speakMario(): void {
+  if (!game) return
+  state.clippyTip = virusTip(hudOf(game).virusesLeft)
+  state.clippyBalloon = true
+  state.clippyOn = true
+  paintClippy()
+}
+
+function paintClippy(): void {
+  const text = document.getElementById('clippy-text')
+  if (text) text.textContent = state.clippyTip
+}
+
+function paintMarioChrome(): void {
+  if (!game) return
+  const hud = hudOf(game)
+  state.marioHud = hud
+  const virus = document.getElementById('mario-virus')
+  const score = document.getElementById('mario-score')
+  const msg = document.getElementById('mario-msg')
+  const status = document.getElementById('mario-status')
+  const nextBtn = document.querySelector<HTMLButtonElement>('[data-act="mario-next"]')
+  const quitBtn = document.querySelector<HTMLButtonElement>('[data-act="mario-quit"]')
+  if (virus) virus.textContent = String(hud.virusesLeft).padStart(2, '0')
+  if (score) score.textContent = String(hud.score).padStart(6, '0')
+  const line = marioStatus()
+  if (msg) msg.textContent = line
+  if (status) status.textContent = line
+  if (nextBtn) {
+    nextBtn.disabled = hud.status === 'playing'
+    nextBtn.textContent = hud.status === 'won' ? 'Next >' : 'Continue anyway'
+  }
+  if (quitBtn) quitBtn.textContent = hud.status === 'lost' ? 'I am not a doctor' : 'I give up'
+  const next = document.getElementById('mario-next') as HTMLCanvasElement | null
+  if (next) drawNext(hud.next, next)
+}
+
+function stopGameLoop(): void {
+  if (gameRaf) cancelAnimationFrame(gameRaf)
+  gameRaf = 0
+  lastTs = 0
+  stopMusic()
+}
+
+function frame(ts: number): void {
+  if (!game || state.step !== 'drmario') return
+  const dt = lastTs ? Math.min(48, ts - lastTs) : 16
+  lastTs = ts
+  if (!gamePaused && !state.overlay && !state.minimized) {
+    tick(game, dt, sfx)
+    const canvas = document.getElementById('mario') as HTMLCanvasElement | null
+    if (canvas) {
+      const box = canvas.parentElement?.getBoundingClientRect()
+      const scale = fitScale(box ? Math.min(280, box.width) : 220, Math.min(420, window.innerHeight - 260))
+      drawGame(game, canvas, scale)
+    }
+    paintMarioChrome()
+  }
+  gameRaf = requestAnimationFrame(frame)
+}
+
+function attachGame(reset: boolean): void {
+  stopGameLoop()
+  if (reset || !game) {
+    game = newGame()
+    state.marioHud = hudOf(game)
+  }
+  gamePaused = Boolean(state.overlay)
+  paintMarioChrome()
+  startMusic()
+  lastTs = 0
+  gameRaf = requestAnimationFrame(frame)
+}
+
 function finishBoot(): void {
-  if (bootLeaving || state.step !== 'boot') return
-  bootLeaving = true
+  if (state.step !== 'boot') return
   clearTimers()
   chord()
   setStep('desktop')
-  later(() => setStep('welcome'), 700)
-}
-
-function runBoot(): void {
-  const log = document.getElementById('boot-log')
-  if (!log) return
-  document.querySelector<HTMLElement>('.boot-screen')?.focus()
-  let i = 0
-  const tick = (): void => {
-    if (state.step !== 'boot' || bootLeaving) return
-    const item = BOOT_LINES[i]
-    if (!item) {
-      later(finishBoot, 380)
-      return
-    }
-    if (item.replace) {
-      const last = log.lastElementChild
-      if (last) last.textContent = item.text
-    } else {
-      const row = document.createElement('div')
-      row.className = 'boot-line'
-      row.textContent = item.text.length ? item.text : ' '
-      log.appendChild(row)
-    }
-    log.scrollTop = log.scrollHeight
-    i += 1
-    later(tick, item.ms ?? 80)
-  }
-  tick()
+  later(() => setStep('welcome'), 800)
 }
 
 function setStep(step: Step): void {
+  if (state.step === 'drmario' && step !== 'drmario') stopGameLoop()
   clearTimers()
   state.step = step
   state.overlay = null
   state.minimized = false
   state.startOpen = false
-  if (step !== 'boot' && step !== 'desktop' && step !== 'copy' && step !== 'bsod') bumpDialog()
+  if (step !== 'boot' && step !== 'desktop' && step !== 'finish') state.dialogs += 1
   if (step !== 'boot') speakClippy(step)
   render()
-  if (step === 'copy') runCopy()
-  if (step === 'bsod') {
-    later(() => {
-      void transmit()
-    }, 1600)
-  }
+  if (step === 'drmario') attachGame(true)
+  if (step === 'finish') void transmit()
 }
 
 function render(): void {
   const app = document.getElementById('app')
   if (!app) return
   app.innerHTML = chrome()
-}
-
-function runCopy(): void {
-  state.progress = 0
-  const files = ['BOGER.EXE', 'TIMES.DRV', 'BOGER32.DLL', 'SETUP.BMP', 'README.TXT', 'TIMES.DAT']
-  let i = 0
-  const tick = () => {
-    if (state.step !== 'copy') return
-    state.progress = Math.min(99, state.progress + 7 + (i % 3))
-    const bar = document.getElementById('bar')
-    const label = document.getElementById('copy-file')
-    const file = files[i % files.length]
-    if (label) label.textContent = `Copying: C:\\Program Files\\BogerBowl\\${file}`
-    if (bar) bar.style.width = `${state.progress}%`
-    const status = document.querySelector('.status-bar-field')
-    if (status) status.textContent = `${state.progress}% complete`
-    i += 1
-    if (state.progress >= 99) {
-      later(() => setStep('writeprotect'), 400)
-      return
-    }
-    later(tick, 180)
+  if (state.step === 'drmario') {
+    attachGame(false)
   }
-  later(tick, 200)
+  if (state.step === 'boot') {
+    document.querySelector<HTMLElement>('.win98-splash')?.focus()
+    later(finishBoot, 4200)
+  }
+  if (state.step === 'name') {
+    document.getElementById('name')?.focus()
+  }
 }
 
 async function transmit(): Promise<void> {
   if (state.sending) return
   state.sending = true
+  render()
+  const bar = document.getElementById('bar')
+  if (bar) bar.style.width = '88%'
   try {
     await submitAvailability({
       display_name: state.name.trim(),
@@ -879,16 +773,16 @@ async function transmit(): Promise<void> {
       available_slot_ids: [...state.selected],
       gauntlet_seconds: Math.max(1, Math.round((Date.now() - state.startedAt) / 1000)),
       rage_clicks: state.rage,
-      bowling_throws: state.dialogs,
+      bowling_throws: state.marioHud?.virusesCleared ?? 0,
     })
     state.results = await listResponses()
+    state.sending = false
     setStep('results')
   } catch (err) {
     chordSad()
     state.sending = false
     state.error = err instanceof Error ? err.message : 'unknown'
-    state.overlay = null
-    setStep('writeprotect')
+    setStep('slots')
     later(() => {
       state.overlay = 'help'
       render()
@@ -901,15 +795,6 @@ async function transmit(): Promise<void> {
 function resetVisit(): void {
   state.name = ''
   state.selected = new Set()
-  state.dllTries = 0
-  state.copyTries = 0
-  state.progress = 0
-  state.restartNow = true
-  state.noAgree = false
-  state.tzOk = false
-  state.rage = 0
-  state.dialogs = 0
-  state.startedAt = Date.now()
   state.results = null
   state.error = ''
   state.sending = false
@@ -917,13 +802,25 @@ function resetVisit(): void {
   state.clippyOn = true
   state.clippyBalloon = true
   state.clippyTip = ''
-  state.captchaOk = false
-  state.captchaFails = 0
-  state.captchaRobot = false
-  state.captchaPicks = new Set()
-  state.captchaTiles = []
-  state.captchaMsg = ''
+  state.helpAt = 0
+  state.weeknightsBetrayed = false
+  state.slotsNote = ''
+  state.rage = 0
+  state.dialogs = 0
+  state.startedAt = Date.now()
+  state.marioHud = null
+  game = null
   resetClippyTalk()
+}
+
+function keyToInput(key: string): Input | null {
+  if (key === 'ArrowLeft' || key === 'a' || key === 'A') return 'left'
+  if (key === 'ArrowRight' || key === 'd' || key === 'D') return 'right'
+  if (key === 'ArrowDown' || key === 's' || key === 'S') return 'down'
+  if (key === 'ArrowUp' || key === 'x' || key === 'X') return 'up'
+  if (key === 'z' || key === 'Z') return 'rotccw'
+  if (key === ' ' || key === 'Enter') return 'drop'
+  return null
 }
 
 function handle(act: string, el: HTMLElement): void {
@@ -944,20 +841,33 @@ function handle(act: string, el: HTMLElement): void {
         render()
       }
       break
+    case 'open-mario':
+      unlockAudio()
+      ding()
+      if (state.step === 'desktop' || state.step === 'results') {
+        if (!state.name.trim()) state.name = 'Commissioner'
+        setStep('drmario')
+      } else if (state.step === 'drmario') {
+        state.minimized = false
+        state.startOpen = false
+        render()
+      } else {
+        state.startOpen = false
+        setStep('drmario')
+      }
+      break
     case 'my-computer':
-      state.overlay = 'help'
+      ding()
+      state.overlay = 'computer'
       render()
-      later(() => {
-        const copy = document.querySelector('.overlay-win .dlg-copy')
-        if (copy) copy.innerHTML = `<p>These are not the times you are looking for.</p>`
-      }, 0)
       break
     case 'recycle':
       state.overlay = 'help'
       render()
       later(() => {
         const copy = document.querySelector('.overlay-win .dlg-copy')
-        if (copy) copy.innerHTML = `<p>The Recycle Bin is empty. Your patience is not.</p>`
+        if (copy)
+          copy.innerHTML = `<p>Recycle Bin contains 1 item:</p><p><strong>AUNT.AVI</strong> — Windows Media Player cannot decode this file. A truck appears to have eaten the subject. This tape is famous. It will not help you pick a draft time.</p>`
       }, 0)
       break
     case 'printout':
@@ -977,12 +887,9 @@ function handle(act: string, el: HTMLElement): void {
       render()
       break
     case 'run-ok':
-      state.overlay = 'help'
-      render()
-      later(() => {
-        const copy = document.querySelector('.overlay-win .dlg-copy')
-        if (copy) copy.innerHTML = `<p>Cannot find the file 'C:\\WINDOWS\\BOGER.EXE' (or one of its components). Make sure the path and filename are correct and that all required libraries are available.</p>`
-      }, 0)
+      state.overlay = null
+      ding()
+      setStep('drmario')
       break
     case 'shutdown':
       state.startOpen = false
@@ -991,10 +898,12 @@ function handle(act: string, el: HTMLElement): void {
       break
     case 'min':
       state.minimized = true
+      gamePaused = true
       render()
       break
     case 'restore':
       state.minimized = false
+      gamePaused = false
       render()
       break
     case 'max':
@@ -1014,58 +923,29 @@ function handle(act: string, el: HTMLElement): void {
     case 'overlay-ok':
     case 'overlay-x':
       state.overlay = null
+      gamePaused = false
       render()
       break
     case 'help':
       ding()
       state.overlay = 'help'
       render()
+      if (state.helpAt < HELP_PAGES.length - 1) state.helpAt += 1
       break
     case 'skip-boot':
       finishBoot()
       break
     case 'noop':
       break
-    case 'to-hang':
+    case 'to-welcome':
       ding()
-      setStep('hang')
-      break
-    case 'details': {
-      document.getElementById('details')?.classList.toggle('hidden')
-      break
-    }
-    case 'to-license':
-      ding()
-      setStep('license')
-      break
-    case 'fake-agree':
-      ;(el as HTMLInputElement).checked = false
-      chordSad()
-      state.overlay = 'help'
-      render()
-      later(() => {
-        const copy = document.querySelector('.overlay-win .dlg-copy')
-        if (copy) copy.innerHTML = `<p>That checkbox is a lie. Use the other one.</p>`
-      }, 0)
-      break
-    case 'no-agree':
-      state.noAgree = (el as HTMLInputElement).checked
-      render()
+      setStep('welcome')
       break
     case 'to-name':
-      if (!state.noAgree) return
       ding()
       setStep('name')
       break
-    case 'browse':
-      state.overlay = 'help'
-      render()
-      later(() => {
-        const copy = document.querySelector('.overlay-win .dlg-copy')
-        if (copy) copy.innerHTML = `<p>Browse is not available in this evaluation copy of Windows.</p>`
-      }, 0)
-      break
-    case 'to-mean': {
+    case 'to-slots': {
       const input = document.getElementById('name') as HTMLInputElement | null
       if (input) state.name = input.value
       if (state.name.trim().length < 2) {
@@ -1079,76 +959,17 @@ function handle(act: string, el: HTMLElement): void {
         return
       }
       ding()
-      setStep('didyoumean')
-      break
-    }
-    case 'mean-yes':
-      state.name = mangled(state.name)
-      ding()
-      setStep('dll')
-      break
-    case 'mean-no':
-      ding()
-      setStep('dll')
-      break
-    case 'dll-retry':
-      state.dllTries += 1
-      ding()
-      render()
-      bumpDialog()
-      break
-    case 'dll-abort':
-      state.overlay = 'cantclose'
-      render()
-      break
-    case 'dll-ignore':
-      ding()
-      setStep('modem')
-      break
-    case 'modem-yes':
-      chordSad()
-      state.overlay = 'help'
-      render()
-      later(() => {
-        const copy = document.querySelector('.overlay-win .dlg-copy')
-        if (copy) copy.innerHTML = `<p>No modem was found on COM1. The correct answer was No.</p>`
-      }, 0)
-      break
-    case 'modem-no':
-      ding()
-      setStep('timezone')
-      break
-    case 'tz':
-      state.tzOk = true
-      break
-    case 'tz-apply':
-      ding()
-      break
-    case 'to-days':
-      if (!state.tzOk) {
-        chordSad()
-        state.overlay = 'help'
-        render()
-        later(() => {
-          const copy = document.querySelector('.overlay-win .dlg-copy')
-          if (copy) copy.innerHTML = `<p>Please select Pacific Time. Apply is decorative. OK is not, but only after you click the Pacific radio.</p>`
-        }, 0)
-        return
-      }
-      ding()
       setStep('slots')
       break
-    case 'to-timezone':
-      ding()
-      setStep('timezone')
-      break
+    }
     case 'toggle': {
       const id = el.dataset.id ?? ''
-      if (state.selected.has(id)) state.selected.delete(id)
-      else state.selected.add(id)
+      const on = el instanceof HTMLInputElement ? el.checked : false
+      if (on) state.selected.add(id)
+      else state.selected.delete(id)
       const status = document.querySelector('.status-bar-field')
       if (status) {
-        status.textContent = `${state.selected.size} window${state.selected.size === 1 ? '' : 's'} checked · Pacific Time`
+        status.textContent = `${state.selected.size} window${state.selected.size === 1 ? '' : 's'} checked · Pacific Time${state.slotsNote ? ` · ${state.slotsNote}` : ''}`
       }
       break
     }
@@ -1156,15 +977,24 @@ function handle(act: string, el: HTMLElement): void {
       for (const day of DAYS) {
         for (const id of eveningIds(day)) state.selected.add(id)
       }
-      ding()
+      if (!state.weeknightsBetrayed) {
+        state.selected.delete(FUNERAL_ID)
+        state.weeknightsBetrayed = true
+        state.slotsNote = 'Sun Sep 6 6:00 PM is a funeral'
+        chordSad()
+      } else {
+        state.slotsNote = ''
+        ding()
+      }
       render()
       break
     case 'clear-slots':
       state.selected = new Set()
+      state.slotsNote = ''
       ding()
       render()
       break
-    case 'to-copy':
+    case 'to-mario':
       if (state.selected.size < 1) {
         chordSad()
         state.overlay = 'help'
@@ -1175,105 +1005,42 @@ function handle(act: string, el: HTMLElement): void {
         }, 0)
         return
       }
-      if (!state.captchaOk) {
-        ding()
-        if (state.captchaTiles.length === 0) shuffleCaptcha()
-        state.overlay = 'captcha'
-        state.captchaMsg = ''
-        render()
-        return
-      }
       ding()
-      setStep('copy')
+      setStep('drmario')
       break
-    case 'captcha-robot':
-      state.captchaRobot = (el as HTMLInputElement).checked
-      state.captchaMsg = state.captchaRobot ? 'Images loaded. Slowly.' : ''
-      render()
+    case 'mario-retry':
+      ding()
+      attachGame(true)
+      speakClippy('drmario')
+      paintClippy()
       break
-    case 'captcha-tile': {
-      const i = Number(el.dataset.i)
-      if (Number.isNaN(i)) break
-      if (state.captchaPicks.has(i)) state.captchaPicks.delete(i)
-      else state.captchaPicks.add(i)
-      el.classList.toggle('on', state.captchaPicks.has(i))
+    case 'mario-quit':
+      if (game && game.status === 'playing') giveUp(game, sfx)
+      paintMarioChrome()
       break
-    }
-    case 'captcha-skip':
-      chordSad()
-      state.captchaMsg = 'Skip is not available during bee season.'
-      render()
-      break
-    case 'captcha-x':
-      chordSad()
-      state.captchaMsg = 'You must complete the security check. Your times are still checked underneath this.'
-      render()
-      break
-    case 'captcha-verify': {
-      if (!state.captchaRobot) {
-        chordSad()
-        state.captchaMsg = 'Confirm you are not a robot first.'
-        render()
+    case 'mario-next':
+      if (!game || game.status === 'playing') return
+      ding()
+      stopGameLoop()
+      if (state.name.trim().length < 2) {
+        setStep('name')
         break
       }
-      const bees = state.captchaTiles.filter((t) => t.kind === 'bee').map((t) => t.i)
-      const ok =
-        bees.length === state.captchaPicks.size && bees.every((i) => state.captchaPicks.has(i))
-      if (!ok) {
-        chordSad()
-        state.captchaMsg = 'Please select every honey bee. Only the bees. Not the football.'
-        render()
+      if (state.selected.size < 1) {
+        setStep('slots')
         break
       }
-      if (state.captchaFails < 1) {
-        state.captchaFails += 1
-        shuffleCaptcha()
-        state.captchaMsg = 'New images. Select the honey bees again. This is the security model.'
-        ding()
-        render()
-        break
-      }
-      state.captchaOk = true
-      state.overlay = null
-      ding()
-      setStep('copy')
-      break
-    }
-    case 'wp-abort':
-      state.overlay = 'cantclose'
-      render()
-      break
-    case 'wp-retry':
-      state.copyTries += 1
-      if (state.copyTries >= 2) {
-        ding()
-        setStep('finish')
-      } else {
-        ding()
-        setStep('copy')
-      }
-      break
-    case 'wp-ignore':
-      ding()
       setStep('finish')
       break
-    case 'rs-yes':
-      state.restartNow = true
+    case 'm-rot':
+      if (game) press(game, 'rot', sfx)
       break
-    case 'rs-no':
-      state.restartNow = false
-      break
-    case 'finish':
-      ding()
-      if (state.restartNow) setStep('bsod')
-      else void transmit()
+    case 'm-drop':
+      if (game) press(game, 'drop', sfx)
       break
     case 'again':
       resetVisit()
       setStep('desktop')
-      break
-    case 'bsod-key':
-      void transmit()
       break
     case 'clippy-summon':
       state.clippyOn = true
@@ -1282,11 +1049,15 @@ function handle(act: string, el: HTMLElement): void {
       break
     case 'clippy-next':
       bumpClippy()
-      render()
+      if (state.step === 'drmario' && document.getElementById('clippy-text')) paintClippy()
+      else render()
       break
     case 'clippy-ok':
       state.clippyBalloon = false
-      render()
+      if (state.step === 'drmario') {
+        document.querySelector('.clippy-bubble')?.remove()
+        document.querySelector('.clippy-btn')?.classList.remove('talk')
+      } else render()
       break
     case 'clippy-hide':
       state.clippyOn = false
@@ -1295,8 +1066,7 @@ function handle(act: string, el: HTMLElement): void {
       window.setTimeout(() => {
         if (state.step === 'boot') return
         state.clippyOn = true
-        state.clippyTip =
-          'I sensed you still needed me. Hide is more of a suggestion.'
+        state.clippyTip = 'I sensed you still needed me. Hide is more of a suggestion.'
         state.clippyBalloon = true
         render()
       }, 4200)
@@ -1315,16 +1085,22 @@ export function mount(el: HTMLElement): void {
     }
     const actEl = t.closest<HTMLElement>('[data-act]')
     if (!actEl) {
-      if (!t.closest('input, textarea, button, label, .window, .clippy-dock, .clippy-peek')) state.rage += 1
+      if (!t.closest('input, textarea, button, label, .window, .clippy-dock, .clippy-peek, canvas')) state.rage += 1
       return
     }
     const act = actEl.dataset.act ?? ''
-    if (act === 'name' || act === 'run-path' || act === 'toggle' || act === 'tz' || act === 'rs-yes' || act === 'rs-no' || act === 'no-agree' || act === 'captcha-robot') {
+    if (act === 'toggle' || act === 'm-left' || act === 'm-right' || act === 'm-down') return
+    if (act === 'name' || act === 'run-path') {
       handle(act, actEl)
       return
     }
     ev.preventDefault()
     handle(act, actEl)
+  })
+
+  el.addEventListener('change', (ev) => {
+    const t = ev.target as HTMLElement
+    if (t instanceof HTMLInputElement && t.dataset.act === 'toggle') handle('toggle', t)
   })
 
   el.addEventListener('input', (ev) => {
@@ -1333,6 +1109,23 @@ export function mount(el: HTMLElement): void {
   })
 
   el.addEventListener('pointerdown', (ev) => {
+    const pad = (ev.target as HTMLElement).closest<HTMLElement>('[data-act^="m-"]')
+    if (pad && game) {
+      const act = pad.dataset.act ?? ''
+      const map: Record<string, Input> = {
+        'm-left': 'left',
+        'm-right': 'right',
+        'm-down': 'down',
+        'm-rot': 'rot',
+        'm-drop': 'drop',
+      }
+      const input = map[act]
+      if (input && input !== 'drop' && input !== 'rot') {
+        ev.preventDefault()
+        press(game, input, sfx)
+      }
+      return
+    }
     const bar = (ev.target as HTMLElement).closest('[data-drag]')
     const win = bar?.closest<HTMLElement>('[data-window]')
     if (!bar || !win || ev.button !== 0) return
@@ -1355,28 +1148,53 @@ export function mount(el: HTMLElement): void {
     window.addEventListener('pointerup', up)
   })
 
-  window.addEventListener('keydown', (ev) => {
-    if (state.step !== 'boot') return
-    ev.preventDefault()
-    finishBoot()
+  el.addEventListener('pointerup', (ev) => {
+    const pad = (ev.target as HTMLElement).closest<HTMLElement>('[data-act^="m-"]')
+    if (!pad || !game) return
+    const act = pad.dataset.act ?? ''
+    if (act === 'm-left') release(game, 'left')
+    if (act === 'm-right') release(game, 'right')
+    if (act === 'm-down') release(game, 'down')
   })
 
-  el.addEventListener('keydown', (ev) => {
+  window.addEventListener('keydown', (ev) => {
     if (state.step === 'boot') {
       ev.preventDefault()
       finishBoot()
       return
     }
-    if (state.step === 'bsod') {
-      void transmit()
-    }
     if (ev.key === 'F1') {
       ev.preventDefault()
       handle('help', el)
+      return
     }
-    if (ev.key === 'Escape') handle('try-exit', el)
+    if (ev.key === 'Escape') {
+      handle('try-exit', el)
+      return
+    }
+    if (state.step !== 'drmario' || !game || state.overlay || state.minimized) return
+    if (ev.repeat && (ev.key === 'ArrowUp' || ev.key === 'x' || ev.key === 'X' || ev.key === 'z' || ev.key === 'Z' || ev.key === ' ' || ev.key === 'Enter')) {
+      ev.preventDefault()
+      return
+    }
+    const input = keyToInput(ev.key)
+    if (!input) return
+    ev.preventDefault()
+    press(game, input, sfx)
   })
 
+  window.addEventListener('keyup', (ev) => {
+    if (state.step !== 'drmario' || !game) return
+    const input = keyToInput(ev.key)
+    if (input) release(game, input)
+  })
+
+  window.setInterval(() => {
+    state.clock = clockLabel()
+    const node = document.getElementById('clock')
+    if (node) node.textContent = state.clock
+  }, 1000)
+  state.clock = clockLabel()
+
   render()
-  runBoot()
 }

@@ -22,21 +22,13 @@ export function clippySvg(): string {
 }
 
 const STEP_TIP: Record<string, string> = {
-  desktop: 'It looks like you\'re trying to start a computer!',
-  welcome: 'It looks like you\'re trying to pick a draft time. I can hover nearby and not help.',
-  hang: 'This program performed an illegal operation. Closing it is how you continue. Obviously.',
-  license: 'It looks like you\'re trying to read a license agreement. The honest checkbox is the working one.',
-  name: 'Type your real name. AutoCorrect is going to have opinions.',
-  didyoumean: 'Windows is guessing your name. Windows is often wrong.',
-  dll: 'Retry will not find that file. Ignore is the grown-up button.',
-  modem: 'If I were allowed to help, I would whisper: click No.',
-  timezone: 'Click Pacific, then OK. Apply is a decoration.',
-  slots: 'This is the actual form. Check times, then survive the bee quiz. I will try not to talk.',
-  copy: 'Copying files. This part is fake. The next error is also fake. Then it saves.',
-  writeprotect: 'Ignore. I mean it this time.',
-  finish: 'You can skip the restart. The radio on the right is safe.',
-  results: 'Printout complete. You may go tell people you survived Setup.',
-  bsod: 'It looks like you\'re experiencing a fatal exception. Press any key.',
+  desktop: 'It looks like you\'re trying to start Windows 98! I live here now. Sorry.',
+  welcome: 'It looks like you\'re trying to pick a Boger Bowl draft time. I can hover nearby and not help.',
+  name: 'Type the name Grandma would yell across the house. Company is already Boger Bowl LLC. That is not optional.',
+  slots: 'This is the actual form. Check every window you can do. All times are Pacific. Kansas still does not count.',
+  drmario: 'Windows found 4 viruses. You must practice medicine. Arrow keys move, Up or the rotate button twists the pill. Clear four germs. Or don\'t. I already filled out the waiver.',
+  finish: 'Setup is saving your times over a perfectly good modem sound I do not have.',
+  results: 'Printout complete. You survived Windows 98 and a medical license. Tell the commissioner.',
 }
 
 const BONUS = [
@@ -47,6 +39,9 @@ const BONUS = [
   'Cinnamon rolls are league-sanctioned. I am a paperclip and therefore ineligible for a piece.',
   'Aaron unplugs things at festivals. If the lights go out mid-draft, check behind Aaron before you check the breaker.',
   'Bryan once shot himself in the eye with an airsoft gun Barb bought him. He is fine. The story is not allowed to retire.',
+  'There is a famous home video of a truck eating an aunt. I have seen the thumbnail. I will not be playing it in this balloon.',
+  'You all have ties back to Kansas. Kansas still sucks. This is not a timezone setting. It is a medical fact.',
+  'It looks like you\'re trying to match four in a row. I went to paperclip medical school for this.',
 ]
 
 let greeted = false
@@ -62,10 +57,16 @@ function namedTip(name: string): string | null {
   if (/timmy/i.test(n)) return 'Hello Timmy. Grandma already called. You remain the favorite grandson. This wizard is a formality.'
   if (/curt/i.test(n)) return 'Hello Uncle Curt. Ancestry.com can wait. I say that with love and no expectation you will listen.'
   if (/kenny/i.test(n)) return 'Hello Kenny, the best commissioner possible. I will try to stay out of the way.'
-  if (/aaron/i.test(n)) return 'Hello Aaron. Please keep the power strip plugged in until Setup finishes copying files.'
-  if (/bryan/i.test(n)) return 'Hello Bryan. Eye protection is recommended, even for dialog boxes.'
+  if (/aaron/i.test(n)) return 'Hello Aaron. Please keep the power strip plugged in until Dr. Boger finishes his residency.'
+  if (/bryan/i.test(n)) return 'Hello Bryan. Eye protection is recommended, even for viruses.'
   if (/darien|jack/i.test(n)) return 'Hello. Filling out a spouse\'s board is still a buy-in. Especially this year.'
   if (/barb/i.test(n)) return 'Hello Barb. The league thanks you for historic equipment donations. No further airsoft, please.'
+  if (/lynn/i.test(n)) return 'Hello Lynn. Aaron says hi. You know which Aaron. Last names are still a Packers violation.'
+  if (/steven/i.test(n)) return 'Hello Steven. Your union card scanned. Your gamertag did not. Girl-dad override is on.'
+  if (/jimmy/i.test(n)) return 'Hello Jimmy. The draft starts when the bark looks right. Steven has not been notified.'
+  if (/cori/i.test(n)) return 'Hello Cori. Jacksonville is loaded. Zoe is too young to pick a running back. You still have to check boxes.'
+  if (/lydia/i.test(n)) return 'Hello Lydia. House projects are not a recognized bye week. Anything to distract you is still a time slot.'
+  if (/amy/i.test(n)) return 'Hello Amy. If Jack is hovering, close the laptop after you click Next.'
   return null
 }
 
@@ -86,14 +87,14 @@ export function tipFor(step: string, name: string, kind: 'step' | 'next'): strin
   return STEP_TIP[step] ?? STEP_TIP.welcome ?? ''
 }
 
-export function mangledJoke(name: string): string | null {
-  const t = name.trim()
-  if (/timmy/i.test(t)) return "Grandma's Favorite Grandson"
-  if (/curt/i.test(t)) return 'Ancestry.com Power User'
-  if (/kenny/i.test(t)) return 'Best Commissioner Possible'
-  if (/aaron/i.test(t)) return 'Festival Unplug Specialist'
-  if (/bryan/i.test(t)) return 'Airsoft Safety Spokesperson'
-  if (/darien|jack/i.test(t)) return 'In-Law Buy-In'
-  if (/barb/i.test(t)) return 'Procurement (Airsoft, Retired)'
-  return null
+export function virusTip(left: number): string {
+  if (left <= 0) return 'You may now practice fantasy football in the state of Windows 98.'
+  if (left === 1) return 'One virus left. I believe in you the way I believe in a 56k handshake.'
+  if (left === 2) return 'Halfway. The commissioner is mildly impressed and also still a paperclip.'
+  if (left === 3) return 'One down. Three to go. Do not lick the bottle.'
+  return STEP_TIP.drmario ?? ''
+}
+
+export function loseTip(): string {
+  return 'I would have prescribed the other pill. Anyway, Setup continues. The league still needs your times.'
 }

@@ -1,4 +1,6 @@
 let ctx: AudioContext | null = null
+let musicTimer = 0
+let musicStep = 0
 
 function audio(): AudioContext | null {
   if (!ctx) {
@@ -45,4 +47,79 @@ export function chord(): void {
 export function chordSad(): void {
   tone(196, 0.35, 'square', 0.05)
   tone(165, 0.45, 'square', 0.04, 0.12)
+}
+
+export function sfxMove(): void {
+  tone(220, 0.04, 'square', 0.02)
+}
+
+export function sfxRotate(): void {
+  tone(440, 0.05, 'square', 0.025)
+  tone(554, 0.06, 'square', 0.02, 0.03)
+}
+
+export function sfxLand(): void {
+  tone(160, 0.07, 'square', 0.035)
+}
+
+export function sfxClear(): void {
+  tone(523, 0.08, 'square', 0.03)
+  tone(659, 0.1, 'square', 0.03, 0.06)
+}
+
+export function sfxVirus(): void {
+  tone(392, 0.08, 'square', 0.04)
+  tone(523, 0.1, 'square', 0.035, 0.07)
+  tone(784, 0.14, 'square', 0.03, 0.14)
+}
+
+export function sfxLose(): void {
+  tone(196, 0.18, 'square', 0.05)
+  tone(165, 0.22, 'square', 0.04, 0.12)
+  tone(131, 0.35, 'square', 0.04, 0.28)
+}
+
+export function sfxWin(): void {
+  tone(523, 0.12, 'square', 0.04)
+  tone(659, 0.12, 'square', 0.035, 0.12)
+  tone(784, 0.12, 'square', 0.035, 0.24)
+  tone(1046, 0.28, 'square', 0.03, 0.36)
+}
+
+const TUNE: [number, number][] = [
+  [392, 140],
+  [494, 140],
+  [587, 140],
+  [698, 210],
+  [587, 140],
+  [494, 140],
+  [392, 280],
+  [0, 80],
+  [349, 140],
+  [440, 140],
+  [523, 140],
+  [659, 210],
+  [523, 140],
+  [440, 140],
+  [349, 280],
+  [0, 120],
+]
+
+export function startMusic(): void {
+  stopMusic()
+  const beat = (): void => {
+    const note = TUNE[musicStep % TUNE.length]
+    musicStep += 1
+    if (!note) return
+    const [freq, ms] = note
+    if (freq > 0) tone(freq, ms / 1000, 'square', 0.018)
+    musicTimer = window.setTimeout(beat, ms)
+  }
+  beat()
+}
+
+export function stopMusic(): void {
+  if (musicTimer) window.clearTimeout(musicTimer)
+  musicTimer = 0
+  musicStep = 0
 }
